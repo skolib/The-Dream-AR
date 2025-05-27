@@ -1,6 +1,5 @@
 import * as three from 'https://threejs.org/build/three.module.js';
 import { XRButton } from "https://threejs.org/examples/jsm/webxr/XRButton.js";
-//import { OBJLoader } from 'https://threejs.org/examples/jsm/loaders/OBJLoader.js';
 import { FBXLoader } from 'https://threejs.org/examples/jsm/loaders/FBXLoader.js';
 
 let scene, camera, renderer, sphere, marker;
@@ -103,7 +102,7 @@ function placeMarker() {
     };
 }
 
-//}
+
 
 function addFBXToScene(url, position = {x:0, y:0, z:0}) {
     const loader = new FBXLoader();
