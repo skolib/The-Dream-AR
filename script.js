@@ -1,6 +1,6 @@
-import * as THREE from 'https://threejs.org/build/three.module.js';
-import { XRButton } from "https://threejs.org/examples/jsm/webxr/XRButton.js";
-import { FBXLoader } from 'https://threejs.org/examples/jsm/loaders/FBXLoader.js';
+import * as THREE from 'https://esm.sh/three@0.152.2';
+import { XRButton } from 'https://esm.sh/three@0.152.2/examples/jsm/webxr/XRButton.js';
+import { FBXLoader } from 'https://esm.sh/three@0.152.2/examples/jsm/loaders/FBXLoader.js';
 
 let scene, camera, renderer, sphere, marker;
 let markerPosition = null; // Position of the marker
