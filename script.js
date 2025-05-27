@@ -1,6 +1,6 @@
 import * as three from 'https://threejs.org/build/three.module.js';
 import { XRButton } from "https://threejs.org/examples/jsm/webxr/XRButton.js";
-import { OBJLoader } from 'https://threejs.org/examples/jsm/loaders/OBJLoader.js';
+//import { OBJLoader } from 'https://threejs.org/examples/jsm/loaders/OBJLoader.js';
 import { FBXLoader } from 'https://threejs.org/examples/jsm/loaders/FBXLoader.js';
 
 let scene, camera, renderer, sphere, marker;
@@ -103,23 +103,7 @@ function placeMarker() {
     };
 }
 
-function addOBJToScene(url, position = {x:0, y:0, z:0}) {
-    const loader = new OBJLoader();
-    loader.load(
-        url,
-        function (object) {
-            object.position.set(position.x, position.y, position.z);
-            scene.add(object);
-        },
-        function (xhr) {
-            // Optional: Fortschritt anzeigen
-            // console.log((xhr.loaded / xhr.total * 100) + '% geladen');
-        },
-        function (error) {
-            console.error('Fehler beim Laden der OBJ-Datei:', error);
-        }
-    );
-}
+//}
 
 function addFBXToScene(url, position = {x:0, y:0, z:0}) {
     const loader = new FBXLoader();
