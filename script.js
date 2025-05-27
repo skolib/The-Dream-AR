@@ -1,5 +1,7 @@
 import * as THREE from 'https://threejs.org/build/three.module.js';
 import { XRButton } from "https://threejs.org/examples/jsm/webxr/XRButton.js";
+import { OBJLoader } from 'https://threejs.org/examples/jsm/loaders/OBJLoader.js';
+import { FBXLoader } from 'https://threejs.org/examples/jsm/loaders/FBXLoader.js';
 
 let scene, camera, renderer, sphere, marker;
 let markerPosition = null; // Position of the marker
@@ -42,6 +44,9 @@ function init() {
             scene.add(sphere);
             sphere.layers.set(1);
             sphere.visible = false; // Sphere is initially hidden
+
+            // FBX-Stuhl auf dem Boden platzieren (z.B. bei x=0, y=0, z=-2)
+            addFBXToScene('monoblock_CHAIR.fbx', {x: 0, y: 0, z: -2});
         }
     );
 
@@ -58,16 +63,12 @@ function init() {
 }
 
 function onSelect() {
-    //alert("onSelect triggered by controller"); // Debugging alert
     placeMarker();
 }
 
 function onTouch(event) {
-    //alert("Screen tapped"); // Debugging alert
-
     // Ensure AR session is active
     if (!renderer.xr.isPresenting) {
-        //alert("AR session is not active");
         return;
     }
 
@@ -100,9 +101,36 @@ function placeMarker() {
         y: marker.position.y,
         z: marker.position.z,
     };
-
-    //alert(`Marker position set to: x=${markerPosition.x}, y=${markerPosition.y}, z=${markerPosition.z}`); // Debugging alert
 }
+
+function addOBJToScene(url, position = {x:0, y:0, z:0}) {
+    const loader = new OBJLoader();
+    loader.load(
+        url,
+        function (object) {
+            object.position.set(position.x, position.y, position.z);
+            scene.add(object);
+        },
+        function (xhr) {
+            // Optional: Fortschritt anzeigen
+            // console.log((xhr.loaded / xhr.total * 100) + '% geladen');
+        },
+        function (error) {
+            console.error('Fehler beim Laden der OBJ-Datei:', error);
+        }
+    );
+}
+
+function addFBXToScene(url, position = {x:0, y:0, z:0}) {
+    const loader = new FBXLoader();
+    loader.load(url, function(object) {
+        object.position.set(position.x, position.y, position.z);
+        scene.add(object);
+    });
+}
+
+// Beispiel-Aufruf nach dem Laden der Textur (im textureLoader.load Callback):
+// addOBJToScene('URL_ZU_DEINER_OBJ_DATEI.obj', {x: 0, y: 1, z: -2});
 
 function animate() {
     renderer.setAnimationLoop(render);
@@ -124,12 +152,9 @@ function render(timestamp, xrFrame) {
                 Math.pow(position.z - markerPosition.z, 2)
             );
 
-            //alert(`Distance from marker: ${distance}`); // Debugging alert
-
             // Toggle sphere visibility based on distance
             if (sphere) {
-                sphere.visible = distance < 1.5; // Sphere is visible if closer than 1.5 meters
-                //alert(`Sphere visibility: ${sphere.visible}`); // Debugging alert
+                sphere.visible = distance < 1.0; // Sphere is visible if closer than 1.0 meters
             }
         }
     }
