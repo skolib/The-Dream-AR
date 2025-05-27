@@ -58,16 +58,16 @@ function init() {
 }
 
 function onSelect() {
-    alert("onSelect triggered by controller"); // Debugging alert
+    //alert("onSelect triggered by controller"); // Debugging alert
     placeMarker();
 }
 
 function onTouch(event) {
-    alert("Screen tapped"); // Debugging alert
+    //alert("Screen tapped"); // Debugging alert
 
     // Ensure AR session is active
     if (!renderer.xr.isPresenting) {
-        alert("AR session is not active");
+        //alert("AR session is not active");
         return;
     }
 
@@ -101,7 +101,7 @@ function placeMarker() {
         z: marker.position.z,
     };
 
-    alert(`Marker position set to: x=${markerPosition.x}, y=${markerPosition.y}, z=${markerPosition.z}`); // Debugging alert
+    //alert(`Marker position set to: x=${markerPosition.x}, y=${markerPosition.y}, z=${markerPosition.z}`); // Debugging alert
 }
 
 function animate() {
@@ -124,12 +124,12 @@ function render(timestamp, xrFrame) {
                 Math.pow(position.z - markerPosition.z, 2)
             );
 
-            alert(`Distance from marker: ${distance}`); // Debugging alert
+            //alert(`Distance from marker: ${distance}`); // Debugging alert
 
             // Toggle sphere visibility based on distance
             if (sphere) {
                 sphere.visible = distance < 1.5; // Sphere is visible if closer than 1.5 meters
-                alert(`Sphere visibility: ${sphere.visible}`); // Debugging alert
+                //alert(`Sphere visibility: ${sphere.visible}`); // Debugging alert
             }
         }
     }
