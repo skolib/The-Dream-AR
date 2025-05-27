@@ -1,4 +1,4 @@
-import * as THREE from 'https://threejs.org/build/three.module.js';
+import * as three from 'https://threejs.org/build/three.module.js';
 import { XRButton } from "https://threejs.org/examples/jsm/webxr/XRButton.js";
 import { OBJLoader } from 'https://threejs.org/examples/jsm/loaders/OBJLoader.js';
 import { FBXLoader } from 'https://threejs.org/examples/jsm/loaders/FBXLoader.js';
@@ -9,10 +9,10 @@ let controller; // Controller for AR interaction
 
 function init() {
     // Create scene
-    scene = new THREE.Scene();
+    scene = new three.Scene();
 
     // Create camera
-    camera = new THREE.PerspectiveCamera(
+    camera = new three.PerspectiveCamera(
         75,
         window.innerWidth / window.innerHeight,
         0.1,
@@ -21,7 +21,7 @@ function init() {
     camera.layers.enable(1);
 
     // Create renderer
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer = new three.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.xr.enabled = true;
     document.body.appendChild(renderer.domElement);
@@ -30,23 +30,23 @@ function init() {
     document.body.appendChild(XRButton.createButton(renderer));
 
     // Load 360-degree image as texture
-    const textureLoader = new THREE.TextureLoader();
+    const textureLoader = new three.TextureLoader();
     textureLoader.load(
         "https://cdn.glitch.global/86a46bb0-a4d7-4cd0-a288-f2a6f516ee40/360_beach_panorama.jpg?v=1747147255201",
         function (texture) {
-            const geometry = new THREE.SphereGeometry(500, 60, 40);
-            const material = new THREE.MeshBasicMaterial({
+            const geometry = new three.SphereGeometry(500, 60, 40);
+            const material = new three.MeshBasicMaterial({
                 map: texture,
-                side: THREE.DoubleSide,
+                side: three.DoubleSide,
             });
-            sphere = new THREE.Mesh(geometry, material);
+            sphere = new three.Mesh(geometry, material);
             sphere.rotation.y = Math.PI; // Flip the image
             scene.add(sphere);
             sphere.layers.set(1);
             sphere.visible = false; // Sphere is initially hidden
 
             // FBX-Stuhl auf dem Boden platzieren (z.B. bei x=0, y=0, z=-2)
-            addFBXToScene('monoblock_CHAIR.fbx', {x: 0, y: 0, z: -2});
+            addFBXToScene('monoblock_CHAIR.fbx', {x: 0, y: 0, z: 0});
         }
     );
 
@@ -77,9 +77,9 @@ function onTouch(event) {
 
 function placeMarker() {
     // Create cone geometry for the marker
-    const geometry = new THREE.CylinderGeometry(0, 0.05, 0.2, 32).rotateX(Math.PI / 2);
-    const material = new THREE.MeshPhongMaterial({ color: 0x00ff00 }); // Green color
-    marker = new THREE.Mesh(geometry, material);
+    const geometry = new three.CylinderGeometry(0, 0.05, 0.2, 32).rotateX(Math.PI / 2);
+    const material = new three.MeshPhongMaterial({ color: 0x00ff00 }); // Green color
+    marker = new three.Mesh(geometry, material);
 
     // Position the marker at the controller's position or fallback to camera position
     if (controller) {
@@ -87,7 +87,7 @@ function placeMarker() {
         marker.quaternion.setFromRotationMatrix(controller.matrixWorld);
     } else {
         // Fallback for touch: place marker in front of the camera
-        const cameraDirection = new THREE.Vector3();
+        const cameraDirection = new three.Vector3();
         camera.getWorldDirection(cameraDirection);
         marker.position.copy(camera.position).add(cameraDirection.multiplyScalar(1.5)); // 1.5 meters in front
     }
@@ -129,8 +129,7 @@ function addFBXToScene(url, position = {x:0, y:0, z:0}) {
     });
 }
 
-// Beispiel-Aufruf nach dem Laden der Textur (im textureLoader.load Callback):
-// addOBJToScene('URL_ZU_DEINER_OBJ_DATEI.obj', {x: 0, y: 1, z: -2});
+
 
 function animate() {
     renderer.setAnimationLoop(render);
