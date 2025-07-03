@@ -91,10 +91,12 @@ function onTouch(event) {
 
 function placeMarker() {
     // Determine marker index (max 4)
-    let markerIndex = markers.length;
-    if (markerIndex >= maxMarkers) {        
-        markerIndex = markerIndex % maxMarkers; // Cycle through markers
+    // Marker-Index immer zyklisch erhöhen
+    if (typeof placeMarker.currentIndex === 'undefined') {
+        placeMarker.currentIndex = 0;
     }
+    let markerIndex = placeMarker.currentIndex;
+    placeMarker.currentIndex = (placeMarker.currentIndex + 1) % maxMarkers;
 
     let marker;
     if (markers[markerIndex]) {
