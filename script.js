@@ -45,7 +45,7 @@ function init() {
             sphere.visible = false; // Sphere is initially hidden
 
             // FBX-Stuhl auf dem Boden platzieren (z.B. bei x=0, y=0, z=-2)
-            addFBXToScene('monoblock_CHAIR.fbx', {x: 0, y: 0, z: 0});
+            // addFBXToScene('monoblock_CHAIR.fbx', {x: 0, y: 0, z: 0});
         }
     );
 
