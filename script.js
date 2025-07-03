@@ -41,25 +41,27 @@ function init() {
     // Load all sphere textures
     const textureLoader = new THREE.TextureLoader();
     let loaded = 0;
+    // Sphären mit korrekter Zuordnung der Texturen laden
     for (let i = 0; i < sphereTextures.length; i++) {
-        textureLoader.load(
-            sphereTextures[i],
-            function (texture) {
-                const geometry = new THREE.SphereGeometry(500, 60, 40);
-                const material = new THREE.MeshBasicMaterial({
-                    map: texture,
-                    side: THREE.DoubleSide,
-                });
-                const sphere = new THREE.Mesh(geometry, material);
-                sphere.rotation.y = Math.PI;
-                scene.add(sphere);
-                sphere.layers.set(1);
-                sphere.visible = false;
-                spheres.push(sphere);
-                loaded++;
-                
-            }
-        );
+        ((index) => {
+            textureLoader.load(
+                sphereTextures[index],
+                function (texture) {
+                    const geometry = new THREE.SphereGeometry(500, 60, 40);
+                    const material = new THREE.MeshBasicMaterial({
+                        map: texture,
+                        side: THREE.DoubleSide,
+                    });
+                    const sphere = new THREE.Mesh(geometry, material);
+                    sphere.rotation.y = Math.PI;
+                    scene.add(sphere);
+                    sphere.layers.set(1);
+                    sphere.visible = false;
+                    spheres[index] = sphere;
+                    loaded++;
+                }
+            );
+        })(i);
     }
 
     // Add controller for AR interaction
@@ -224,9 +226,15 @@ function render(timestamp, xrFrame) {
                 }
             }
             if (minIndex !== -1 && minDist < 1.0) {
-                spheres[minIndex].visible = true;
-                if (markers[minIndex] && markers[minIndex].fbxObject) {
-                    markers[minIndex].fbxObject.visible = true;
+                // Nur die aktuelle Sphere sichtbar machen
+                for (let i = 0; i < spheres.length; i++) {
+                    spheres[i].visible = (i === minIndex);
+                }
+                // Nur das aktuelle FBX-Objekt sichtbar machen
+                for (let i = 0; i < markers.length; i++) {
+                    if (markers[i] && markers[i].fbxObject) {
+                        markers[i].fbxObject.visible = (i === minIndex);
+                    }
                 }
             }
         }
