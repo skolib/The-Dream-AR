@@ -142,15 +142,29 @@ function placeMarker() {
 function addFBXToScene(url, position = {x:0, y:0, z:0}) {
     const loader = new FBXLoader();
     loader.load(url, function(object) {
+        // FBX Modelle können verschachtelt sein, daher BoundingBox bestimmen
+        let box = new THREE.Box3().setFromObject(object);
+        let size = new THREE.Vector3();
+        box.getSize(size);
+        let maxDim = Math.max(size.x, size.y, size.z);
+        let scale = 1.0;
+        if (maxDim > 0) {
+            scale = 0.3 / maxDim; // Zielgröße: ca. 0.3m
+        }
+        object.scale.set(scale, scale, scale);
         object.position.set(position.x, position.y, position.z);
-        object.scale.set(0.01, 0.01, 0.01); // FBX Modelle sind oft zu groß, daher skalieren
         object.traverse(function(child) {
             if (child.isMesh) {
                 child.castShadow = true;
                 child.receiveShadow = true;
+                child.material.side = THREE.DoubleSide;
             }
         });
         scene.add(object);
+        // Debug: BoundingBox anzeigen
+        // const helper = new THREE.Box3Helper(new THREE.Box3().setFromObject(object), 0xff0000);
+        // scene.add(helper);
+        console.log('FBX geladen und skaliert:', size, 'Skalierung:', scale);
     }, undefined, function(error) {
         console.error('FBX load error:', error);
     });
