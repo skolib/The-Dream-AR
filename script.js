@@ -2,9 +2,19 @@ import * as THREE from 'three';
 import { XRButton } from 'three/addons/webxr/XRButton.js';
 import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 
-let scene, camera, renderer, sphere, marker;
-let markerPosition = null; // Position of the marker
+let scene, camera, renderer;
+let spheres = [];
+let markers = [];
+let markerPositions = [];
+let sphereTextures = [
+    "https://cdn.glitch.global/86a46bb0-a4d7-4cd0-a288-f2a6f516ee40/360_beach_panorama.jpg?v=1747147255201",
+    "https://wallpapercave.com/wp/wp10981056.jpg",
+    "https://wallpapercave.com/wp/wp10981049.jpg",
+    "https://wallpapercave.com/wp/wp10981057.jpg"
+];
+let maxMarkers = 4;
 let controller; // Controller for AR interaction
+
 
 function init() {
     // Create scene
@@ -28,26 +38,32 @@ function init() {
     // Add XRButton
     document.body.appendChild(XRButton.createButton(renderer));
 
-    // Load 360-degree image as texture
+    // Load all sphere textures
     const textureLoader = new THREE.TextureLoader();
-    textureLoader.load(
-        "https://cdn.glitch.global/86a46bb0-a4d7-4cd0-a288-f2a6f516ee40/360_beach_panorama.jpg?v=1747147255201",
-        function (texture) {
-            const geometry = new THREE.SphereGeometry(500, 60, 40);
-            const material = new THREE.MeshBasicMaterial({
-                map: texture,
-                side: THREE.DoubleSide,
-            });
-            sphere = new THREE.Mesh(geometry, material);
-            sphere.rotation.y = Math.PI; // Flip the image
-            scene.add(sphere);
-            sphere.layers.set(1);
-            sphere.visible = false; // Sphere is initially hidden
-
-            // FBX-Stuhl auf dem Boden platzieren (z.B. bei x=0, y=0, z=-2)
-            addFBXToScene('monoblock_CHAIR.fbx', {x: 0, y: 0, z: 0});
-        }
-    );
+    let loaded = 0;
+    for (let i = 0; i < sphereTextures.length; i++) {
+        textureLoader.load(
+            sphereTextures[i],
+            function (texture) {
+                const geometry = new THREE.SphereGeometry(500, 60, 40);
+                const material = new THREE.MeshBasicMaterial({
+                    map: texture,
+                    side: THREE.DoubleSide,
+                });
+                const sphere = new THREE.Mesh(geometry, material);
+                sphere.rotation.y = Math.PI;
+                scene.add(sphere);
+                sphere.layers.set(1);
+                sphere.visible = false;
+                spheres.push(sphere);
+                loaded++;
+                if (loaded === sphereTextures.length) {
+                    // FBX-Stuhl auf dem Boden platzieren (z.B. bei x=0, y=0, z=-2)
+                    addFBXToScene('monoblock_CHAIR.fbx', {x: 0, y: 0, z: 0});
+                }
+            }
+        );
+    }
 
     // Add controller for AR interaction
     controller = renderer.xr.getController(0);
@@ -75,10 +91,25 @@ function onTouch(event) {
 }
 
 function placeMarker() {
-    // Create cone geometry for the marker
-    const geometry = new THREE.CylinderGeometry(0, 0.05, 0.2, 32).rotateX(Math.PI / 2);
-    const material = new THREE.MeshPhongMaterial({ color: 0x00ff00 }); // Green color
-    marker = new THREE.Mesh(geometry, material);
+    // Determine marker index (max 4)
+    let markerIndex = markers.length;
+    if (markerIndex >= maxMarkers) {
+        // Move the first marker instead of creating a new one
+        markerIndex = 0;
+    }
+
+    let marker;
+    if (markers[markerIndex]) {
+        marker = markers[markerIndex];
+    } else {
+        // Create cone geometry for the marker
+        const geometry = new THREE.CylinderGeometry(0, 0.05, 0.2, 32).rotateX(Math.PI / 2);
+        const material = new THREE.MeshPhongMaterial({ color: 0x00ff00 }); // Green color
+        marker = new THREE.Mesh(geometry, material);
+        scene.add(marker);
+        markers.push(marker);
+        markerPositions.push({x:0, y:0, z:0});
+    }
 
     // Position the marker at the controller's position or fallback to camera position
     if (controller) {
@@ -88,14 +119,11 @@ function placeMarker() {
         // Fallback for touch: place marker in front of the camera
         const cameraDirection = new THREE.Vector3();
         camera.getWorldDirection(cameraDirection);
-        marker.position.copy(camera.position).add(cameraDirection.multiplyScalar(1.5)); // 1.5 meters in front
+        marker.position.copy(camera.position).add(cameraDirection.multiplyScalar(1.5));
     }
 
-    // Add the marker to the scene
-    scene.add(marker);
-
     // Save the marker's position
-    markerPosition = {
+    markerPositions[markerIndex] = {
         x: marker.position.x,
         y: marker.position.y,
         z: marker.position.z,
@@ -108,7 +136,16 @@ function addFBXToScene(url, position = {x:0, y:0, z:0}) {
     const loader = new FBXLoader();
     loader.load(url, function(object) {
         object.position.set(position.x, position.y, position.z);
+        object.scale.set(0.01, 0.01, 0.01); // FBX Modelle sind oft zu groß, daher skalieren
+        object.traverse(function(child) {
+            if (child.isMesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+            }
+        });
         scene.add(object);
+    }, undefined, function(error) {
+        console.error('FBX load error:', error);
     });
 }
 
@@ -124,23 +161,28 @@ function render(timestamp, xrFrame) {
         const referenceSpace = renderer.xr.getReferenceSpace();
         const viewerPose = xrFrame.getViewerPose(referenceSpace);
 
-        if (viewerPose && markerPosition) {
+        // Hide all spheres by default
+        for (let s of spheres) {
+            s.visible = false;
+        }
+
+        if (viewerPose && markerPositions.length > 0) {
             const position = viewerPose.transform.position;
-
-            // Calculate the distance from the marker
-            const distance = Math.sqrt(
-                Math.pow(position.x - markerPosition.x, 2) +
-                Math.pow(position.y - markerPosition.y, 2) +
-                Math.pow(position.z - markerPosition.z, 2)
-            );
-
-            // Toggle sphere visibility based on distance
-            if (sphere) {
-                sphere.visible = distance < 1.0; // Sphere is visible if closer than 1.0 meters
+            // Check all markers
+            for (let i = 0; i < markerPositions.length && i < spheres.length; i++) {
+                const markerPos = markerPositions[i];
+                if (!markerPos) continue;
+                const distance = Math.sqrt(
+                    Math.pow(position.x - markerPos.x, 2) +
+                    Math.pow(position.y - markerPos.y, 2) +
+                    Math.pow(position.z - markerPos.z, 2)
+                );
+                if (distance < 1.0) {
+                    spheres[i].visible = true;
+                }
             }
         }
     }
-
     renderer.render(scene, camera);
 }
 
