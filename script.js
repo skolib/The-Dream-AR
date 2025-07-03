@@ -57,10 +57,7 @@ function init() {
                 sphere.visible = false;
                 spheres.push(sphere);
                 loaded++;
-                if (loaded === sphereTextures.length) {
-                    // FBX-Stuhl auf dem Boden platzieren (z.B. bei x=0, y=0, z=-2)
-                    addFBXToScene('monoblock_CHAIR.fbx', {x: 0, y: 0, z: -2});
-                }
+                
             }
         );
     }
@@ -112,15 +109,21 @@ function placeMarker() {
     }
 
     // Position the marker at the controller's position or fallback to camera position
+    let forward = new THREE.Vector3();
     if (controller) {
         marker.position.set(0, 0, -0.3).applyMatrix4(controller.matrixWorld);
-        marker.quaternion.setFromRotationMatrix(controller.matrixWorld);
+        // Richtung bestimmen (nur Yaw, keine Neigung)
+        controller.getWorldDirection(forward);
     } else {
         // Fallback for touch: place marker in front of the camera
-        const cameraDirection = new THREE.Vector3();
-        camera.getWorldDirection(cameraDirection);
-        marker.position.copy(camera.position).add(cameraDirection.multiplyScalar(1.5));
+        camera.getWorldDirection(forward);
+        marker.position.copy(camera.position).add(forward.clone().multiplyScalar(1.5));
     }
+    // Yaw berechnen (nur horizontale Richtung)
+    forward.y = 0;
+    forward.normalize();
+    // Rotation für Stuhl berechnen
+    const chairYaw = Math.atan2(forward.x, forward.z);
 
     // Save the marker's position
     markerPositions[markerIndex] = {
@@ -129,17 +132,28 @@ function placeMarker() {
         z: marker.position.z,
     };
 
-    // FBX-Stuhl unter den Marker setzen
-    addFBXToScene('monoblock_CHAIR.fbx', {
-        x: marker.position.x,
-        y: marker.position.y - 0.1, // etwas unterhalb des Markers
-        z: marker.position.z
-    });
+    // FBX-Stuhl unter den Marker setzen (aber nur einmal pro Marker)
+    if (!marker.fbxObject) {
+        addFBXToScene('monoblock_CHAIR.fbx', {
+            x: marker.position.x,
+            y: marker.position.y - 0.1,
+            z: marker.position.z
+        }, function(fbxObj) {
+            marker.fbxObject = fbxObj;
+            fbxObj.visible = false;
+            // Nur um Y-Achse drehen
+            fbxObj.rotation.set(0, chairYaw, 0);
+        });
+    } else {
+        // Bewege existierenden FBX-Stuhl zum neuen Marker
+        marker.fbxObject.position.set(marker.position.x, marker.position.y - 0.1, marker.position.z);
+        marker.fbxObject.rotation.set(0, chairYaw, 0);
+    }
 }
 
 
 
-function addFBXToScene(url, position = {x:0, y:0, z:0}) {
+function addFBXToScene(url, position = {x:0, y:0, z:0}, onLoaded) {
     const loader = new FBXLoader();
     loader.load(url, function(object) {
         // FBX Modelle können verschachtelt sein, daher BoundingBox bestimmen
@@ -161,6 +175,7 @@ function addFBXToScene(url, position = {x:0, y:0, z:0}) {
             }
         });
         scene.add(object);
+        if (onLoaded) onLoaded(object);
         // Debug: BoundingBox anzeigen
         // const helper = new THREE.Box3Helper(new THREE.Box3().setFromObject(object), 0xff0000);
         // scene.add(helper);
@@ -182,14 +197,17 @@ function render(timestamp, xrFrame) {
         const referenceSpace = renderer.xr.getReferenceSpace();
         const viewerPose = xrFrame.getViewerPose(referenceSpace);
 
-        // Hide all spheres by default
+        // Hide all spheres and FBX chairs by default
         for (let s of spheres) {
             s.visible = false;
+        }
+        for (let m of markers) {
+            if (m.fbxObject) m.fbxObject.visible = false;
         }
 
         if (viewerPose && markerPositions.length > 0) {
             const position = viewerPose.transform.position;
-            // Zeige nur die Sphere, die dem Nutzer am nächsten ist (statt alle, die <1m entfernt sind)
+            // Zeige nur die Sphere und den Stuhl, die dem Nutzer am nächsten sind
             let minDist = Infinity;
             let minIndex = -1;
             for (let i = 0; i < markerPositions.length && i < spheres.length; i++) {
@@ -207,6 +225,9 @@ function render(timestamp, xrFrame) {
             }
             if (minIndex !== -1 && minDist < 1.0) {
                 spheres[minIndex].visible = true;
+                if (markers[minIndex] && markers[minIndex].fbxObject) {
+                    markers[minIndex].fbxObject.visible = true;
+                }
             }
         }
     }
