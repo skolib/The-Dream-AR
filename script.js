@@ -7,10 +7,10 @@ let spheres = [];
 let markers = [];
 let markerPositions = [];
 let sphereTextures = [
-    "https://cdn.glitch.global/86a46bb0-a4d7-4cd0-a288-f2a6f516ee40/360_beach_panorama.jpg?v=1747147255201",
-    "https://wallpapercave.com/wp/wp10981056.jpg",
-    "https://wallpapercave.com/wp/wp10981049.jpg",
-    "https://wallpapercave.com/wp/wp10981057.jpg"
+    "Bild1.jpg",
+    "Bild2.jpg",
+    "Bild3.jpg",
+    "Bild4.jpg"
 ];
 let maxMarkers = 4;
 let controller; // Controller for AR interaction
@@ -212,7 +212,7 @@ function render(timestamp, xrFrame) {
             // Zeige nur die Sphere und den Stuhl, die dem Nutzer am nächsten sind
             let minDist = Infinity;
             let minIndex = -1;
-            for (let i = 0; i < markerPositions.length && i < spheres.length; i++) {
+            for (let i = 0; i < markerPositions.length && i < maxMarkers; i++) {
                 const markerPos = markerPositions[i];
                 if (!markerPos) continue;
                 const distance = Math.sqrt(
@@ -225,16 +225,14 @@ function render(timestamp, xrFrame) {
                     minIndex = i;
                 }
             }
-            if (minIndex !== -1 && minDist < 1.0) {
-                // Nur die aktuelle Sphere sichtbar machen
-                for (let i = 0; i < spheres.length; i++) {
-                    spheres[i].visible = (i === minIndex);
-                }
-                // Nur das aktuelle FBX-Objekt sichtbar machen
-                for (let i = 0; i < markers.length; i++) {
-                    if (markers[i] && markers[i].fbxObject) {
-                        markers[i].fbxObject.visible = (i === minIndex);
-                    }
+            // Sphären-Sichtbarkeit korrekt setzen (immer alle sphären prüfen)
+            for (let i = 0; i < spheres.length; i++) {
+                spheres[i].visible = (i === minIndex && minDist < 1.0);
+            }
+            // Nur das aktuelle FBX-Objekt sichtbar machen
+            for (let i = 0; i < markers.length; i++) {
+                if (markers[i] && markers[i].fbxObject) {
+                    markers[i].fbxObject.visible = (i === minIndex && minDist < 1.0);
                 }
             }
         }
