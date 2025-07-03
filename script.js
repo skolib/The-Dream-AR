@@ -59,7 +59,7 @@ function init() {
                 loaded++;
                 if (loaded === sphereTextures.length) {
                     // FBX-Stuhl auf dem Boden platzieren (z.B. bei x=0, y=0, z=-2)
-                    addFBXToScene('monoblock_CHAIR.fbx', {x: 0, y: 0, z: 0});
+                    addFBXToScene('monoblock_CHAIR.fbx', {x: 0, y: 0, z: -2});
                 }
             }
         );
@@ -128,6 +128,13 @@ function placeMarker() {
         y: marker.position.y,
         z: marker.position.z,
     };
+
+    // FBX-Stuhl unter den Marker setzen
+    addFBXToScene('monoblock_CHAIR.fbx', {
+        x: marker.position.x,
+        y: marker.position.y - 0.1, // etwas unterhalb des Markers
+        z: marker.position.z
+    });
 }
 
 
@@ -168,7 +175,9 @@ function render(timestamp, xrFrame) {
 
         if (viewerPose && markerPositions.length > 0) {
             const position = viewerPose.transform.position;
-            // Check all markers
+            // Zeige nur die Sphere, die dem Nutzer am nächsten ist (statt alle, die <1m entfernt sind)
+            let minDist = Infinity;
+            let minIndex = -1;
             for (let i = 0; i < markerPositions.length && i < spheres.length; i++) {
                 const markerPos = markerPositions[i];
                 if (!markerPos) continue;
@@ -177,9 +186,13 @@ function render(timestamp, xrFrame) {
                     Math.pow(position.y - markerPos.y, 2) +
                     Math.pow(position.z - markerPos.z, 2)
                 );
-                if (distance < 1.0) {
-                    spheres[i].visible = true;
+                if (distance < minDist) {
+                    minDist = distance;
+                    minIndex = i;
                 }
+            }
+            if (minIndex !== -1 && minDist < 1.0) {
+                spheres[minIndex].visible = true;
             }
         }
     }
