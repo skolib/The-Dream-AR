@@ -92,9 +92,8 @@ function onTouch(event) {
 function placeMarker() {
     // Determine marker index (max 4)
     let markerIndex = markers.length;
-    if (markerIndex >= maxMarkers) {
-        // Move the first marker instead of creating a new one
-        markerIndex = 0;
+    if (markerIndex >= maxMarkers) {        
+        markerIndex = markerIndex % maxMarkers; // Cycle through markers
     }
 
     let marker;
