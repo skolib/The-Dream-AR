@@ -14,8 +14,6 @@ let sphereTextures = [
 ];
 let maxMarkers = 4;
 let controller; // Controller for AR interaction
-let hitTestSource = null;
-let hitTestSourceRequested = false;
 
 
 function init() {
@@ -74,58 +72,31 @@ function init() {
     // Add fallback for touch interaction
     window.addEventListener('click', onTouch);
 
-    // WebXR ARCore Hit-Test Setup (nur einmal pro Session)
-    renderer.xr.addEventListener('sessionstart', async () => {
-        const session = renderer.xr.getSession();
-        if (session && session.requestReferenceSpace && session.requestHitTestSource) {
-            const referenceSpace = await session.requestReferenceSpace('viewer');
-            hitTestSource = await session.requestHitTestSource({ space: referenceSpace });
-            hitTestSourceRequested = true;
-            session.addEventListener('end', () => {
-                hitTestSourceRequested = false;
-                hitTestSource = null;
-            });
-        }
-    });
-
     // Start animation
     animate();
 }
 
 function onSelect() {
-    const xrFrame = renderer.xr.getFrame();
-    tryPlaceMarkerWithHitTest(xrFrame);
+    placeMarker();
 }
 
 function onTouch(event) {
+    // Ensure AR session is active
     if (!renderer.xr.isPresenting) {
         return;
     }
-    const xrFrame = renderer.xr.getFrame();
-    tryPlaceMarkerWithHitTest(xrFrame);
+
+    placeMarker();
 }
 
-function tryPlaceMarkerWithHitTest(xrFrame) {
-    if (!hitTestSource || !xrFrame) return;
-    const referenceSpace = renderer.xr.getReferenceSpace();
-    const hitTestResults = xrFrame.getHitTestResults(hitTestSource);
-    if (hitTestResults.length > 0) {
-        const hit = hitTestResults[0];
-        const pose = hit.getPose(referenceSpace);
-        if (pose) {
-            placeMarkerAtPose(pose);
-        }
-    }
-}
-
-function placeMarkerAtPose(pose) {
+function placeMarker() {
     // Determine marker index (max 4)
     // Marker-Index immer zyklisch erhöhen
-    if (typeof placeMarkerAtPose.currentIndex === 'undefined') {
-        placeMarkerAtPose.currentIndex = 0;
+    if (typeof placeMarker.currentIndex === 'undefined') {
+        placeMarker.currentIndex = 0;
     }
-    let markerIndex = placeMarkerAtPose.currentIndex;
-    placeMarkerAtPose.currentIndex = (placeMarkerAtPose.currentIndex + 1) % maxMarkers;
+    let markerIndex = placeMarker.currentIndex;
+    placeMarker.currentIndex = (placeMarker.currentIndex + 1) % maxMarkers;
 
     let marker;
     if (markers[markerIndex]) {
@@ -140,11 +111,22 @@ function placeMarkerAtPose(pose) {
         markerPositions.push({x:0, y:0, z:0});
     }
 
-    // Marker auf erkannte Bodenposition setzen
-    marker.position.set(pose.transform.position.x, pose.transform.position.y, pose.transform.position.z);
-    // Yaw aus Quaternion berechnen (nur horizontale Drehung)
-    let q = pose.transform.orientation;
-    let yaw = Math.atan2(2.0 * (q.w * q.y + q.x * q.z), 1.0 - 2.0 * (q.y * q.y + q.z * q.z));
+    // Position the marker at the controller's position or fallback to camera position
+    let forward = new THREE.Vector3();
+    if (controller) {
+        marker.position.set(0, 0, -0.3).applyMatrix4(controller.matrixWorld);
+        // Richtung bestimmen (nur Yaw, keine Neigung)
+        controller.getWorldDirection(forward);
+    } else {
+        // Fallback for touch: place marker in front of the camera
+        camera.getWorldDirection(forward);
+        marker.position.copy(camera.position).add(forward.clone().multiplyScalar(1.5));
+    }
+    // Yaw berechnen (nur horizontale Richtung)
+    forward.y = 0;
+    forward.normalize();
+    // Rotation für Stuhl berechnen
+    const chairYaw = Math.atan2(forward.x, forward.z);
 
     // Save the marker's position
     markerPositions[markerIndex] = {
@@ -153,31 +135,22 @@ function placeMarkerAtPose(pose) {
         z: marker.position.z,
     };
 
-    // FBX-Stuhl auf die Ground Plane stellen (Bounding Box Unterkante auf y=marker.position.y)
-    function placeChairOnGround(fbxObj) {
-        // Bounding Box berechnen
-        let box = new THREE.Box3().setFromObject(fbxObj);
-        let min = new THREE.Vector3();
-        box.getMin(min);
-        // Offset von Unterkante zu Objektursprung
-        let yOffset = min.y;
-        // Stuhl so platzieren, dass Unterkante auf marker.position.y liegt
-        fbxObj.position.set(marker.position.x, marker.position.y - yOffset, marker.position.z);
-        fbxObj.rotation.set(0, yaw, 0);
-    }
-
+    // FBX-Stuhl unter den Marker setzen (aber nur einmal pro Marker)
     if (!marker.fbxObject) {
         addFBXToScene('monoblock_CHAIR.fbx', {
             x: marker.position.x,
-            y: marker.position.y,
+            y: marker.position.y - 0.1,
             z: marker.position.z
         }, function(fbxObj) {
             marker.fbxObject = fbxObj;
             fbxObj.visible = false;
-            placeChairOnGround(fbxObj);
+            // Nur um Y-Achse drehen
+            fbxObj.rotation.set(0, chairYaw, 0);
         });
     } else {
-        placeChairOnGround(marker.fbxObject);
+        // Bewege existierenden FBX-Stuhl zum neuen Marker
+        marker.fbxObject.position.set(marker.position.x, marker.position.y - 0.1, marker.position.z);
+        marker.fbxObject.rotation.set(0, chairYaw, 0);
     }
 }
 
