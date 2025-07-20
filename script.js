@@ -178,7 +178,7 @@ function AR(){
 		});
 		navigator.xr.requestSession( 'immersive-ar', sessionInit ).then( onSessionStarted ).catch(err => {
 			console.error("Unsupported feature", err);
-    		showErrorMessage("Image-tracking nicht unterstützt, versiche einen anderen Browser.");
+    		showErrorMessage("Image-tracking konnte nicht aktiviert werden. Überprüfe, ob du 'webXR incubations' enabled hast auf chrome://flags oder versuche einen anderen Browser.");
 		});
 	} else {
 		currentSession.end();
@@ -305,7 +305,7 @@ button.style.cssText+= `position: absolute;top:80%;left:40%;width:20%;height:2re
 document.body.appendChild(button);
 document.getElementById('ArButton').addEventListener('click',x=> {
 	if (imageBitmapLoadFailed) {
-        showErrorMessage("Lade die Seite neu.");
+        showErrorMessage("UPS! Beim Laden ist etwas falsch gelaufen. Überprüfe, ob du 'webXR incubations' enabled hast auf chrome://flags und Lade die Seite neu.");
         return;
     }
 	 AR();
