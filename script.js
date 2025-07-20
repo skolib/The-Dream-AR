@@ -20,10 +20,10 @@ let group;
 // für 360° Umgebungs wechsel
 const textureLoader = new THREE.TextureLoader();
 let sphereTextures = [
-    "360grad_bilder/Bild1.jpg",
-    "360grad_bilder/Bild2.jpg",
-    "360grad_bilder/Bild3.jpg",
-    "360grad_bilder/Bild4.jpg"
+    "spheretexture/Bild1.jpg",
+    "spheretexture/Bild2.jpg",
+    "spheretexture/Bild3.jpg",
+    "spheretexture/Bild4.jpg"
 ];
 let spheres = [];
 let modelProximityStates = [false, false, false, false]; // true = Nutzer ist nahe dran
