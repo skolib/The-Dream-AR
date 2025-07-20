@@ -1,67 +1,72 @@
-// für basic scene
+// ---------------------------
+// Grundlegende Setup-Variablen
+// ---------------------------
+
+// Basiskomponenten für eine WebXR-3D-Szene
 let camera, scene, renderer, xrRefSpace, gl;
 
-// Für Marker
-let trackableImages = new Array(4);
-let images = [ 
-	'enviroment1', //image ID
-	'enviroment2', //image ID
-	'enviroment3', //image ID
-	'enviroment4', //image ID
+// Marker-Tracking Setup
+let trackableImages = new Array(4); // Platzhalter für 4 trackbare Bilder
+let images = [       // Marker Bilder durch ID holen
+	'enviroment1', 
+	'enviroment2',
+	'enviroment3',
+	'enviroment4',
 ]; 
-let bitmaps = {};
-let imageBitmapLoadFailed = false;
+let bitmaps = {}; // Gespeicherte Bitmap-Daten der Markerbilder
+let imageBitmapLoadFailed = false; // Fehlerstatus bei Bild-Initialisierung
 
-// Für Model
-let loader = new THREE.FBXLoader();
-let models = new Array(4);
-let includedModels = [];
-let group;
+// 3D-Modell Setup
+let loader = new THREE.FBXLoader(); // FBX-Dateien-Loader von Three.js
+let models = new Array(4); // Platzhalter für 4 geladene Modelle
+let includedModels = []; // Indizes der aktuell in der Szene enthaltenen Modelle
+let group; // Modellgruppe für Transformationen
 
-// für 360° Umgebungs wechsel
-const textureLoader = new THREE.TextureLoader();
-let sphereTextures = [
+// Umgebungswechsel Setup
+const textureLoader = new THREE.TextureLoader(); // Texturloader für Sphären
+let sphereTextures = [           // Texturen der Umgebungen
     "spheretexture/Bild1.jpg",
     "spheretexture/Bild2.jpg",
     "spheretexture/Bild3.jpg",
     "spheretexture/Bild4.jpg"
 ];
-let spheres = [];
-let modelProximityStates = [false, false, false, false]; // true = Nutzer ist nahe dran
-let minDist = 1.0; 
+let spheres = [];  // Enthält alle Sphären mit Umgebungs Textur
+let modelProximityStates = [false, false, false, false]; // Nähe-Indikator pro Modell
+let minDist = 1.0; // Abstandsschwelle, um Umgebung zu wechseln
 
-let poseToArray = (obj) => [obj.x, obj.y, obj.z]; // Helps pose Objects to Marker 
+// Hilfsfunktion zum Umwandeln von Positionsdaten 
+let poseToArray = (obj) => [obj.x, obj.y, obj.z]; 
 
-// Setup um Marker, Model und Umgebung vorzubereiten
+// ------------------------------------
+// Initialisierung von Bildern, Modellen & Umgebungen
+// ------------------------------------
+
 for(let image in images){
 	let imageName = images[image];
 
-	// Ensure the image is loaded and ready for use
+	// Markerbild laden und in Bitmap umwandeln
 	let img  = document.getElementById(imageName);
 	createImageBitmap(img).then(x=>{
 		bitmaps[imageName] = x;
 		trackableImages[image] = {
         	image: x,
-        	widthInMeters: 0.1
+        	widthInMeters: 0.1  // Physikalische Markerbreit
 		};
-	}).catch(err => { 										//Fehlermeldung abfangen 
+	}).catch(err => { 										 
 		console.error("createImageBitmap failed", err);
     	imageBitmapLoadFailed = true;
 	});
 
-	// load FBX model
-	loader.load( 'fbx/monoblock_CHAIR.fbx', function ( object ) {
-		object.scale.x = 0.0004;
-    	object.scale.y = 0.0004;
-    	object.scale.z = 0.0004;
-    	object.rotation.y = Math.PI;
+	// Modell laden, skalieren und in eine Gruppe einfügen
+	loader.load( 'fbx/monoblock_CHAIR.fbx', function (object) {
+		object.scale.set(0.0004, 0.0004, 0.0004);
+    	object.rotation.y = Math.PI; // Modell drehen
         group = new THREE.Group();
         group.add(object);
-
-		models[image] = group;
+		models[image] = group;  // Modell abspeichern
 	} );
 	
-	// Spheren mit 360° als Textur laden
+	// Umgebungssphäre vorbereiten und in Szene einfügen (unsichtbar)
 	textureLoader.load(
         sphereTextures[image],
         function (texture) {
@@ -73,116 +78,125 @@ for(let image in images){
             const sphere = new THREE.Mesh(geometry, material);
             sphere.rotation.y = Math.PI;
             scene.add(sphere);
-            sphere.layers.set(1);
+            //sphere.layers.set(1);
             sphere.visible = false;
-			
-            spheres[image] = sphere;
+            spheres[image] = sphere;  // Sphären abspeichern
         }
     );
 	
 } 
 
-//   each frame send to socket.
-let clock = new THREE.Clock();
+// ---------------------------
+// Standard XR & Scene Setup
+// ---------------------------
 
-// standard webxr scene
+let clock = new THREE.Clock(); // Zeitsteuerung für Animationen
+
+// Formatiert JSON-Objekte für POST-Requests
 function xwwwform(jsonObject){
 	return Object.keys(jsonObject).map(key => encodeURIComponent(key) + '=' + encodeURIComponent(jsonObject[key])).join('&');
 }
 
-// create scene
+// Szene initialisieren
 scene = new THREE.Scene();
 
-// add light
-var ambient = new THREE.AmbientLight( 0x222222 );
-scene.add( ambient );
-var directionalLight = new THREE.DirectionalLight( 0xdddddd, 1.5 );
-directionalLight.position.set( 0.9, 1, 0.6 ).normalize();
-scene.add( directionalLight );
-var directionalLight2 = new THREE.DirectionalLight( 0xdddddd, 1 );
-directionalLight2.position.set( -0.9, -1, -0.4 ).normalize();
-scene.add( directionalLight2 );
+// Lichtquellen hinzufügen
+var ambient = new THREE.AmbientLight(0x222222);
+scene.add(ambient);
+var directionalLight = new THREE.DirectionalLight(0xdddddd, 1.5);
+directionalLight.position.set(0.9, 1, 0.6).normalize();
+scene.add(directionalLight);
+var directionalLight2 = new THREE.DirectionalLight(0xdddddd, 1);
+directionalLight2.position.set(-0.9, -1, -0.4).normalize();
+scene.add(directionalLight2);
 
-// add renderer
-camera = new THREE.PerspectiveCamera( 80, window.innerWidth / window.innerHeight, 0.1, 20000 );
-renderer = new THREE.WebGLRenderer({antialias: true,alpha:true });
-renderer.setPixelRatio( window.devicePixelRatio );
+// Renderer initialisieren
+camera = new THREE.PerspectiveCamera(80, window.innerWidth / window.innerHeight, 0.1, 20000);
+renderer = new THREE.WebGLRenderer({antialias: true, alpha:true});
+renderer.setPixelRatio(window.devicePixelRatio);
 camera.aspect = window.innerWidth / window.innerHeight;
-renderer.setSize(window.innerWidth, window.innerHeight );
+renderer.setSize(window.innerWidth, window.innerHeight);
 camera.updateProjectionMatrix();
-document.body.appendChild( renderer.domElement );	
+document.body.appendChild(renderer.domElement);	
 renderer.xr.enabled = true;
 
 function init() {
-	window.addEventListener( 'resize', onWindowResize, false );
+	window.addEventListener('resize', onWindowResize, false);
 }
 
-function getXRSessionInit( mode, options) {
-  	if ( options && options.referenceSpaceType ) {
-  		renderer.xr.setReferenceSpaceType( options.referenceSpaceType );
+// XR Session-Konfiguration vorbereiten
+function getXRSessionInit(mode, options) {
+  	if (options && options.referenceSpaceType) {
+  		renderer.xr.setReferenceSpaceType(options.referenceSpaceType);
   	}
   	var space = (options || {}).referenceSpaceType || 'local-floor';
   	var sessionInit = (options && options.sessionInit) || {};
   
-  	// Nothing to do for default features.
-  	if ( space == 'viewer' )
+  	// Wenn der Benutzer den Speicherplatz bereits als optionales oder erforderliches Feature angegeben hat, tun Sie nichts
+  	if (sessionInit.optionalFeatures && sessionInit.optionalFeatures.includes(space))
   		return sessionInit;
-  	if ( space == 'local' && mode.startsWith('immersive' ) )
-  		return sessionInit;
+  	//if ( sessionInit.requiredFeatures && sessionInit.requiredFeatures.includes(space) )
+  	//	return sessionInit;
   
-  	// If the user already specified the space as an optional or required feature, don't do anything.
-  	if ( sessionInit.optionalFeatures && sessionInit.optionalFeatures.includes(space) )
-  		return sessionInit;
-  	if ( sessionInit.requiredFeatures && sessionInit.requiredFeatures.includes(space) )
-  		return sessionInit;
-  
-  	var newInit = Object.assign( {}, sessionInit );
-  	newInit.requiredFeatures = [ space ];
-  	if ( sessionInit.requiredFeatures ) {
-  		newInit.requiredFeatures = newInit.requiredFeatures.concat( sessionInit.requiredFeatures );
+	// Space als requiredFeature ergänzen
+  	var newInit = Object.assign({}, sessionInit);
+  	newInit.requiredFeatures = [space];
+  	if (sessionInit.requiredFeatures) {
+  		newInit.requiredFeatures = newInit.requiredFeatures.concat(sessionInit.requiredFeatures);
   	}
   	return newInit;
    }
 
+// ------------------------------------
+// WebXR AR-Modus aktivieren/deaktivieren
+// ------------------------------------
+
 function AR(){
 	var currentSession = null;
-	function onSessionStarted( session ) {
-		session.addEventListener( 'end', onSessionEnded );
-		renderer.xr.setSession( session );
+	
+	// AR-Session starten
+	function onSessionStarted(session) {
+		session.addEventListener('end', onSessionEnded);
+		renderer.xr.setSession(session);
 		gl = renderer.getContext();
 		button.style.display = 'none';
 		button.textContent = 'EXIT AR';
 		currentSession = session;
 		session.requestReferenceSpace('local').then((refSpace) => {
-          xrRefSpace = refSpace;
-          session.requestAnimationFrame(onXRFrame);
+        	xrRefSpace = refSpace;
+        	session.requestAnimationFrame(onXRFrame);
         });
 	}
+	
+	// AR-Session beenden
 	function onSessionEnded( /*event*/ ) {
-		currentSession.removeEventListener( 'end', onSessionEnded );
-		renderer.xr.setSession( null );
+		currentSession.removeEventListener('end', onSessionEnded);
+		renderer.xr.setSession(null);
 		button.textContent = 'ENTER AR' ;
 		currentSession = null;
 	}
-	if ( currentSession === null ) {
-		
+	
+	// Session initialisieren oder beenden
+	if (currentSession === null) {
         let options = {
             requiredFeatures: ['dom-overlay','image-tracking'],
             trackedImages: trackableImages,
-            domOverlay: { root: document.body }
+            domOverlay: {root: document.body}
         };
-		var sessionInit = getXRSessionInit( 'immersive-ar', {
+		var sessionInit = getXRSessionInit('immersive-ar', {
 			mode: 'immersive-ar',
 			referenceSpaceType: 'local', // 'local-floor'
 			sessionInit: options
 		});
-		navigator.xr.requestSession( 'immersive-ar', sessionInit ).then( onSessionStarted ).catch(err => {
+		navigator.xr.requestSession('immersive-ar', sessionInit).then(onSessionStarted).catch(err => { 
 			console.error("Unsupported feature", err);
     		showErrorMessage("Image-tracking konnte nicht aktiviert werden. Überprüfe, ob du 'webXR incubations' enabled hast auf chrome://flags oder versuche einen anderen Browser.");
 		});
 	} else {
 		currentSession.end();
 	}
+	
+	// UI-Style bei Sessionwechsel anpassen
 	renderer.xr.addEventListener('sessionstart',
 		function(ev) {
 			console.log('sessionstart', ev);
@@ -197,9 +211,11 @@ function AR(){
 		});
 }
 
-// Functions to change environment
-function enterEnvironment(index){
-	// Umgebung 
+// ------------------------------------
+// Umgebung aktivieren/deaktivieren je nach Modellnähe
+// ------------------------------------
+
+function enterEnvironment(index){ 
 	if (spheres[index]) {
 		spheres[index].visible = true;
 	}
@@ -212,9 +228,7 @@ function enterEnvironment(index){
     }
 }
 
-// Functions to change environment back
 function exitEnvironment(index){
-	// Umgebung 
 	if (spheres[index]) {
 		spheres[index].visible = false;
 	}
@@ -227,6 +241,10 @@ function exitEnvironment(index){
     }
 }
 
+// ------------------------------------
+// Frame für Tracking & Umgebungserkennung
+// ------------------------------------
+
 function onXRFrame(t, frame) {
    	 const session = frame.session;
     	session.requestAnimationFrame(onXRFrame);
@@ -234,7 +252,6 @@ function onXRFrame(t, frame) {
     	const pose = frame.getViewerPose(xrRefSpace);
 	render();
 
-	// Image tracking
 	if (pose) {
 		for (const view of pose.views) {
             const viewport = baseLayer.getViewport(view);
@@ -242,20 +259,20 @@ function onXRFrame(t, frame) {
                         viewport.width, viewport.height);
 			const results = frame.getImageTrackingResults();
 			for (const result of results) {
-			  	const imageIndex = result.index; // The result's index is the image's position in the trackedImages array specified at session creation
+			  	const imageIndex = result.index; // Der Index ist die Position des Bildes im trackedImages-Array, die bei der Sitzungserstellung angegeben wird
 			
-			  	// Get the pose of the image relative to a reference space.
+			  	// Erhalte die Pose des Bildes relativ zu einem Referenzraum.
 			 	const pose1 = frame.getPose(result.imageSpace, xrRefSpace);
 			 	var model = undefined;
 			  	var pos = pose1.transform.position;
 			  	var quat = pose1.transform.orientation;
 
-				// Position Cube to dedicated Marker
+				// Positionier Modell mit dem selben Index auf dem Marker
 			   	if( !includedModels.includes(imageIndex) ){
 					let posi = poseToArray(pos);
 					includedModels.push(imageIndex);
 					model = models[imageIndex];
-			  		scene.add( model );
+			  		scene.add(model);
 			  	}
 				else{
 					model = models[imageIndex];
@@ -264,19 +281,17 @@ function onXRFrame(t, frame) {
 				// Marker tracking state
 			  	const state = result.trackingState;
 			  	if (state == "tracked") {
-					// Position Cube to dedicated Marker
 					let posi = poseToArray(pos);
 					let index = includedModels.indexOf(imageIndex);
 					model.position.copy( pos.toJSON());
 					model.quaternion.copy(quat.toJSON());
 			  	}
-				else if (state == "emulated") {
-			  	}
+				else if (state == "emulated") {}
 			}
-        	}
-    	}
+       	}
+    }
 
-	// Model Proximity to change enviornment
+	// Nähe zur Kamera überprüfen und Umgebung wechseln
 	let xrCamera = renderer.xr.getCamera(camera);
 	let cameraPos = new THREE.Vector3().setFromMatrixPosition(xrCamera.matrixWorld);
 	for (let i = 0; i < includedModels.length; i++) {
@@ -300,19 +315,27 @@ function onXRFrame(t, frame) {
 		}
 	}
 }
-init();
+
+// ---------------------------
+// Fenstergröße anpassen
+// ---------------------------
+
 function onWindowResize() {
 	camera.aspect = window.innerWidth / window.innerHeight;
 	camera.updateProjectionMatrix();
-	renderer.setSize( window.innerWidth, window.innerHeight );
-}
-render();
-function render() {
-	renderer.render( scene, camera );
+	renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-// AR Button
-const button = document.createElement( 'button' );
+// Szene rendern
+function render() {
+	renderer.render(scene, camera);
+}
+
+// ---------------------------
+// AR-Button initialisieren
+// ---------------------------
+
+const button = document.createElement('button');
 button.id = 'ArButton';
 button.textContent = 'ENTER AR' ;
 button.style.cssText+= `position: absolute;top:80%;left:40%;width:20%;height:2rem;`;
@@ -326,7 +349,10 @@ document.getElementById('ArButton').addEventListener('click',x=> {
 	 AR();
 });
 
-// Fehlermeldung anzeige
+// ---------------------------
+// Fehleranzeige bei Problemen
+// ---------------------------
+
 function showErrorMessage(msg) {
     let errorDiv = document.getElementById('errorMsg');
     if (!errorDiv) {
@@ -350,3 +376,10 @@ function showErrorMessage(msg) {
     }
     errorDiv.textContent = msg;
 }
+
+// ---------------------------
+// Initialisierung starten
+// ---------------------------
+
+init();
+render();
