@@ -47,8 +47,8 @@ for(let image in images){
 
 	// load FBX model
 	loader.load( 'fbx/monoblock_CHAIR.fbx', function ( object ) {
-		object.scale.x = 0.0004;
-    	bject.scale.y = 0.0004;
+	object.scale.x = 0.0004;
+    	object.scale.y = 0.0004;
     	object.scale.z = 0.0004;
     	object.rotation.y = Math.PI;
         group = new THREE.Group();
