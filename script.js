@@ -199,17 +199,32 @@ function AR(){
 
 // Functions to change environment
 function enterEnvironment(index){
-	// Sphere 
+	// Umgebung 
 	if (spheres[index]) {
 		spheres[index].visible = true;
 	}
+	
+	// Nur das Modell mit dem übergebenen Index anzeigen 
+	for (let i = 0; i < models.length; i++) {
+        if (models[i]) {
+            models[i].visible = (i === index); 
+        }
+    }
 }
 
+// Functions to change environment back
 function exitEnvironment(index){
-	// Sphere 
+	// Umgebung 
 	if (spheres[index]) {
 		spheres[index].visible = false;
 	}
+	
+	// Alle Modelle wieder anzeigen
+	for (let i = 0; i < models.length; i++) {
+        if (models[i]) {
+            models[i].visible = true;
+        }
+    }
 }
 
 function onXRFrame(t, frame) {
