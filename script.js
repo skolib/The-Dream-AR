@@ -10,9 +10,10 @@ let images = [
 	'enviroment4', //image ID
 ]; 
 let bitmaps = {};
+let imageBitmapLoadFailed = false;
 
 // Für Model
-const loader = new THREE.FBXLoader();
+let loader = new THREE.FBXLoader();
 let models = new Array(4);
 let includedModels = [];
 let group;
@@ -43,11 +44,14 @@ for(let image in images){
         	image: x,
         	widthInMeters: 0.1
 		};
+	}).catch(err => { 										//Fehlermeldung abfangen 
+		console.error("createImageBitmap failed", err);
+    	imageBitmapLoadFailed = true;
 	});
 
 	// load FBX model
 	loader.load( 'fbx/monoblock_CHAIR.fbx', function ( object ) {
-	object.scale.x = 0.0004;
+		object.scale.x = 0.0004;
     	object.scale.y = 0.0004;
     	object.scale.z = 0.0004;
     	object.rotation.y = Math.PI;
@@ -172,7 +176,10 @@ function AR(){
 			referenceSpaceType: 'local', // 'local-floor'
 			sessionInit: options
 		});
-		navigator.xr.requestSession( 'immersive-ar', sessionInit ).then( onSessionStarted );
+		navigator.xr.requestSession( 'immersive-ar', sessionInit ).then( onSessionStarted ).catch(err => {
+			console.error("Unsupported feature", err);
+    		showErrorMessage("Image-tracking nicht unterstützt, versiche einen anderen Browser.");
+		});
 	} else {
 		currentSession.end();
 	}
@@ -290,10 +297,41 @@ function render() {
 }
 
 // AR Button
-var button = document.createElement( 'button' );
+const button = document.createElement( 'button' );
 button.id = 'ArButton';
 button.textContent = 'ENTER AR' ;
 button.style.cssText+= `position: absolute;top:80%;left:40%;width:20%;height:2rem;`;
     
 document.body.appendChild(button);
-document.getElementById('ArButton').addEventListener('click',x=>AR());
+document.getElementById('ArButton').addEventListener('click',x=> {
+	if (imageBitmapLoadFailed) {
+        showErrorMessage("Lade die Seite neu.");
+        return;
+    }
+	 AR();
+});
+
+// Fehlermeldung anzeige
+function showErrorMessage(msg) {
+    let errorDiv = document.getElementById('errorMsg');
+    if (!errorDiv) {
+        errorDiv = document.createElement('div');
+        errorDiv.id = 'errorMsg';
+        errorDiv.style.cssText = `
+            position: absolute;
+            top: 20%;
+            left: 30%;
+            width: 40%;
+            background: rgba(206, 43, 43, 0.55);
+            color: white;
+            text-align: center;
+            padding: 1rem;
+            border-radius: 1rem;
+            font-weight: bold;
+            font-size: 1.2rem;
+            z-index: 9999;
+        `;
+        document.body.appendChild(errorDiv);
+    }
+    errorDiv.textContent = msg;
+}
