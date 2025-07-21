@@ -7,7 +7,7 @@ let spheres = [];
 let markers = [];
 let markerPositions = [];
 let sphereTextures = [
-    "Bild1.jpg",
+    "Bild1.jpeg",
     "Bild2.jpg",
     "Bild3.jpg",
     "Bild4.jpg"
