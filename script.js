@@ -55,7 +55,7 @@ for(let image in images){
 		console.error("createImageBitmap failed", err);
 		imageBitmapLoadFailed = true;
 	});
-
+};
 // Modell laden, skalieren und in eine Gruppe einfügen
 let texturePaths = {
 	PortalSurface_baseColor: 'textures/PortalSurface_base.png',
@@ -94,25 +94,25 @@ for (const [key, path] of Object.entries(texturePaths)) {
 		}
 	});
 }	
-	// Umgebungssphäre vorbereiten und in Szene einfügen (unsichtbar)
-	textureLoader.load(
-		sphereTextures[image],
-		function (texture) {
-			const geometry = new THREE.SphereGeometry(500, 60, 40);
-			const material = new THREE.MeshBasicMaterial({
-				map: texture,
-				side: THREE.DoubleSide,
-			});
-			const sphere = new THREE.Mesh(geometry, material);
-			sphere.rotation.y = Math.PI;
-			scene.add(sphere);
-			//sphere.layers.set(1);
-			sphere.visible = false;
-			spheres[image] = sphere;  // Sphären abspeichern
-		}
-	);
+// Umgebungssphäre vorbereiten und in Szene einfügen (unsichtbar)
+textureLoader.load(
+	sphereTextures[image],
+	function (texture) {
+		const geometry = new THREE.SphereGeometry(500, 60, 40);
+		const material = new THREE.MeshBasicMaterial({
+			map: texture,
+			side: THREE.DoubleSide,
+		});
+		const sphere = new THREE.Mesh(geometry, material);
+		sphere.rotation.y = Math.PI;
+		scene.add(sphere);
+		//sphere.layers.set(1);
+		sphere.visible = false;
+		spheres[image] = sphere;  // Sphären abspeichern
+	}
+);
 	
-} 
+
 
 // ---------------------------
 // Standard XR & Scene Setup
