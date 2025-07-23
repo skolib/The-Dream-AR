@@ -17,8 +17,7 @@ let bitmaps = {}; // Gespeicherte Bitmap-Daten der Markerbilder
 let imageBitmapLoadFailed = false; // Fehlerstatus bei Bild-Initialisierung
 
 // 3D-Modell Setup
-let loader = new THREE.FBXLoader(); // FBX-Dateien-Loader von Three.js
-let models = new Array(4); // Platzhalter für 4 geladene Modelle
+let loader = new GLTFLoader(); // Ersetzt den FBXLoaderlet models = new Array(4); // Platzhalter für 4 geladene Modelle
 let includedModels = []; // Indizes der aktuell in der Szene enthaltenen Modelle
 let group; // Modellgruppe für Transformationen
 
@@ -58,54 +57,65 @@ for(let image in images){
 	});
 
 	// Modell laden, skalieren und in eine Gruppe einfügen
-loader.load('fbx/portal.fbx', function (object) {
-	object.scale.set(5.04, 5.04, 5.04);
-	object.rotation.y = Math.PI; // Modell drehen
-	// Alle Texturen aus dem textures-Ordner laden und zuweisen
-	const textureFiles = [
-		'textures/portal_basecolor.jpg',
-		'textures/portal_emissive.jpg',
-		'textures/portal_metallic.jpg',
-		'textures/portal_normal.jpg',
-		'textures/portal_roughness.jpg'
-	];
-	const loadedTextures = {};
-	let texturesToLoad = textureFiles.length;
-	textureFiles.forEach(function(file) {
-		textureLoader.load(file, function(texture) {
-			loadedTextures[file] = texture;
-			texturesToLoad--;
-			if (texturesToLoad === 0) {
-				// Wenn alle Texturen geladen sind, zuweisen
-				object.traverse(function(child) {
+// Modell laden, skalieren und in eine Gruppe einfügen
+let texturePaths = {
+	PortalSurface_baseColor: 'textures/PortalSurface_base.png',
+	PortalSurface_emissive: 'textures/PortalSurface_emis.png',
+	PortalSurface_normal: 'textures/PortalSurface_norm.png',
+	MagicStone_baseColor: 'textures/MagicStone_base.png',
+	MagicStone_normal: 'textures/MagicStone_norm.png',
+	MagicStoneMoss_baseColor: 'textures/MagicStoneMoss_base.png',
+	MagicStoneMoss_emissive: 'textures/MagicStoneMoss_emis.png',
+	MagicStoneMoss_normal: 'textures/MagicStoneMoss_norm.png',
+};
+
+let loadedTextures = {};
+let texturesToLoad = Object.keys(texturePaths).length;
+
+for (const [key, path] of Object.entries(texturePaths)) {
+	textureLoader.load(path, (texture) => {
+		loadedTextures[key] = texture;
+		texturesToLoad--;
+		if (texturesToLoad === 0) {
+			// Alle Texturen geladen – lade Modell
+			loader.load('/mnt/data/scene.gltf', function (gltf) {
+				let object = gltf.scene;
+				object.scale.set(5.04, 5.04, 5.04);
+				object.rotation.y = Math.PI;
+
+				object.traverse(function (child) {
 					if (child.isMesh) {
-						// Basistextur
-						if (loadedTextures['textures/portal_basecolor.jpg'])
-							child.material.map = loadedTextures['textures/portal_basecolor.jpg'];
-						// Emissive
-						if (loadedTextures['textures/portal_emissive.jpg']) {
-							child.material.emissiveMap = loadedTextures['textures/portal_emissive.jpg'];
+						const name = child.name;
+
+						if (name.includes('PortalSurface')) {
+							child.material.map = loadedTextures.PortalSurface_baseColor;
+							child.material.emissiveMap = loadedTextures.PortalSurface_emissive;
 							child.material.emissive = new THREE.Color(0xffffff);
+							child.material.normalMap = loadedTextures.PortalSurface_normal;
 						}
-						// Metallic
-						if (loadedTextures['textures/portal_metallic.jpg'])
-							child.material.metalnessMap = loadedTextures['textures/portal_metallic.jpg'];
-						// Normal
-						if (loadedTextures['textures/portal_normal.jpg'])
-							child.material.normalMap = loadedTextures['textures/portal_normal.jpg'];
-						// Roughness
-						if (loadedTextures['textures/portal_roughness.jpg'])
-							child.material.roughnessMap = loadedTextures['textures/portal_roughness.jpg'];
+						else if (name.includes('MagicStoneMoss')) {
+							child.material.map = loadedTextures.MagicStoneMoss_baseColor;
+							child.material.emissiveMap = loadedTextures.MagicStoneMoss_emissive;
+							child.material.emissive = new THREE.Color(0x88ff88);
+							child.material.normalMap = loadedTextures.MagicStoneMoss_normal;
+						}
+						else if (name.includes('MagicStone')) {
+							child.material.map = loadedTextures.MagicStone_baseColor;
+							child.material.normalMap = loadedTextures.MagicStone_normal;
+						}
+
 						child.material.needsUpdate = true;
 					}
 				});
-			}
-		});
+
+				group = new THREE.Group();
+				group.add(object);
+				models[image] = group;  // Modell abspeichern
+			});
+		}
 	});
-	group = new THREE.Group();
-	group.add(object);
-	models[image] = group;  // Modell abspeichern
-});
+}
+
 	
 	// Umgebungssphäre vorbereiten und in Szene einfügen (unsichtbar)
 	textureLoader.load(
