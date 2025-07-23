@@ -59,7 +59,7 @@ for(let image in images){
 
 	// Modell laden, skalieren und in eine Gruppe einfügen
 	loader.load( 'fbx/cloud test.FBX', function (object) {
-		object.scale.set(0.0004, 0.0004, 0.0004);
+		object.scale.set(0.04, 0.04, 0.04);
     	object.rotation.y = Math.PI; // Modell drehen
         group = new THREE.Group();
         group.add(object);
