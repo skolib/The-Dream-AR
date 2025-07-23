@@ -17,9 +17,9 @@ let bitmaps = {}; // Gespeicherte Bitmap-Daten der Markerbilder
 let imageBitmapLoadFailed = false; // Fehlerstatus bei Bild-Initialisierung
 
 // 3D-Modell Setup
-let loader = new GLTFLoader(); // Ersetzt den FBXLoaderlet models = new Array(4); // Platzhalter für 4 geladene Modelle
-let includedModels = []; // Indizes der aktuell in der Szene enthaltenen Modelle
-let group; // Modellgruppe für Transformationen
+let loader = new GLTFLoader(); // GLTFLoader statt FBXLoader
+let models = new Array(4); // Platzhalter für 4 geladene Modelle
+let loadedModel = null; // das Modell wird einmal geladen und später geklont
 
 // Umgebungswechsel Setup
 const textureLoader = new THREE.TextureLoader(); // Texturloader für Sphären
@@ -56,7 +56,6 @@ for(let image in images){
 		imageBitmapLoadFailed = true;
 	});
 
-	// Modell laden, skalieren und in eine Gruppe einfügen
 // Modell laden, skalieren und in eine Gruppe einfügen
 let texturePaths = {
 	PortalSurface_baseColor: 'textures/PortalSurface_base.png',
@@ -72,51 +71,29 @@ let texturePaths = {
 let loadedTextures = {};
 let texturesToLoad = Object.keys(texturePaths).length;
 
+// Lade alle Texturen
 for (const [key, path] of Object.entries(texturePaths)) {
 	textureLoader.load(path, (texture) => {
 		loadedTextures[key] = texture;
 		texturesToLoad--;
+
+		// Wenn alle Texturen fertig sind, Modell einmal laden
 		if (texturesToLoad === 0) {
-			// Alle Texturen geladen – lade Modell
-			loader.load('/mnt/data/scene.gltf', function (gltf) {
-				let object = gltf.scene;
-				object.scale.set(5.04, 5.04, 5.04);
-				object.rotation.y = Math.PI;
+			loader.load('gltf/scene.gltf', function (gltf) {
+				loadedModel = gltf.scene;
 
-				object.traverse(function (child) {
-					if (child.isMesh) {
-						const name = child.name;
-
-						if (name.includes('PortalSurface')) {
-							child.material.map = loadedTextures.PortalSurface_baseColor;
-							child.material.emissiveMap = loadedTextures.PortalSurface_emissive;
-							child.material.emissive = new THREE.Color(0xffffff);
-							child.material.normalMap = loadedTextures.PortalSurface_normal;
-						}
-						else if (name.includes('MagicStoneMoss')) {
-							child.material.map = loadedTextures.MagicStoneMoss_baseColor;
-							child.material.emissiveMap = loadedTextures.MagicStoneMoss_emissive;
-							child.material.emissive = new THREE.Color(0x88ff88);
-							child.material.normalMap = loadedTextures.MagicStoneMoss_normal;
-						}
-						else if (name.includes('MagicStone')) {
-							child.material.map = loadedTextures.MagicStone_baseColor;
-							child.material.normalMap = loadedTextures.MagicStone_normal;
-						}
-
-						child.material.needsUpdate = true;
-					}
-				});
-
-				group = new THREE.Group();
-				group.add(object);
-				models[image] = group;  // Modell abspeichern
+				
+				// Wenn das Modell da ist, klone es für alle Marker
+				for (let i = 0; i < images.length; i++) {
+					let modelClone = loadedModel.clone(true);
+					modelClone.scale.set(5.04, 5.04, 5.04);
+					modelClone.rotation.y = Math.PI;
+					models[i] = modelClone;
+				}
 			});
 		}
 	});
-}
-
-	
+}	
 	// Umgebungssphäre vorbereiten und in Szene einfügen (unsichtbar)
 	textureLoader.load(
 		sphereTextures[image],
