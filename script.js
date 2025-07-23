@@ -363,19 +363,29 @@ function render() {
 // AR-Button initialisieren
 // ---------------------------
 
-const button = document.createElement('button');
-button.id = 'ArButton';
-button.textContent = 'ENTER AR' ;
-button.style.cssText+= `position: absolute;top:80%;left:40%;width:20%;height:2rem;`;
-	
-document.body.appendChild(button);
-document.getElementById('ArButton').addEventListener('click',x=> {
-	if (imageBitmapLoadFailed) {
-		showErrorMessage("UPS! Beim Laden ist etwas falsch gelaufen. Überprüfe, ob du 'webXR incubations' enabled hast auf chrome://flags und Lade die Seite neu.");
-		return;
-	}
-	 AR();
-});
+// AR-Button initialisieren (nur wenn noch nicht vorhanden und nach DOM-Ready)
+function createARButton() {
+    if (!document.getElementById('ArButton')) {
+        const button = document.createElement('button');
+        button.id = 'ArButton';
+        button.textContent = 'ENTER AR';
+        button.style.cssText = 'position: absolute;top:80%;left:40%;width:20%;height:2rem;';
+        document.body.appendChild(button);
+        button.addEventListener('click', x => {
+            if (imageBitmapLoadFailed) {
+                showErrorMessage("UPS! Beim Laden ist etwas falsch gelaufen. Überprüfe, ob du 'webXR incubations' enabled hast auf chrome://flags und Lade die Seite neu.");
+                return;
+            }
+            AR();
+        });
+    }
+}
+
+if (document.readyState === 'loading') {
+    window.addEventListener('DOMContentLoaded', createARButton);
+} else {
+    createARButton();
+}
 
 // ---------------------------
 // Fehleranzeige bei Problemen
