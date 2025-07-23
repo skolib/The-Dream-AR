@@ -58,13 +58,23 @@ for(let image in images){
 	});
 
 	// Modell laden, skalieren und in eine Gruppe einfügen
-	loader.load( 'fbx/cloud_test.FBX', function (object) {
-		object.scale.set(1.04, 1.04, 1.04);
-    	object.rotation.y = Math.PI; // Modell drehen
-        group = new THREE.Group();
-        group.add(object);
-		models[image] = group;  // Modell abspeichern
-	} );
+loader.load('fbx/cloud_test.FBX', function (object) {
+	object.scale.set(1.04, 1.04, 1.04);
+	object.rotation.y = Math.PI; // Modell drehen
+	// Textur laden und auf alle Meshes anwenden
+	textureLoader.load('fbx/alpha clouds.jpg', function (texture) {
+		object.traverse(function (child) {
+			if (child.isMesh) {
+				child.material.map = texture;
+				child.material.transparent = true;
+				child.material.needsUpdate = true;
+			}
+		});
+	});
+	group = new THREE.Group();
+	group.add(object);
+	models[image] = group;  // Modell abspeichern
+});
 	
 	// Umgebungssphäre vorbereiten und in Szene einfügen (unsichtbar)
 	textureLoader.load(
