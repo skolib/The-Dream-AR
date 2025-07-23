@@ -25,7 +25,7 @@ let group; // Modellgruppe für Transformationen
 // Umgebungswechsel Setup
 const textureLoader = new THREE.TextureLoader(); // Texturloader für Sphären
 let sphereTextures = [           // Texturen der Umgebungen
-    "spheretexture/Bild1.jpg",
+    "spheretexture/Bild1.webp",
     "spheretexture/Bild2.jpg",
     "spheretexture/Bild3.jpg",
     "spheretexture/Bild4.jpg"
