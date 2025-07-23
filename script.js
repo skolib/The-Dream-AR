@@ -59,7 +59,7 @@ for(let image in images){
 
 	// Modell laden, skalieren und in eine Gruppe einfügen
 loader.load('fbx/cloud_test.FBX', function (object) {
-	object.scale.set(1.04, 1.04, 1.04);
+	object.scale.set(5.04, 5.04, 5.04);
 	object.rotation.y = Math.PI; // Modell drehen
 	// Textur laden und auf alle Meshes anwenden
 	textureLoader.load('fbx/alpha clouds.jpg', function (texture) {
