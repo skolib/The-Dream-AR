@@ -25,10 +25,10 @@ let group; // Modellgruppe für Transformationen
 // Umgebungswechsel Setup
 const textureLoader = new THREE.TextureLoader(); // Texturloader für Sphären
 let sphereTextures = [           // Texturen der Umgebungen
-    "spheretexture/Bild1.webp",
-    "spheretexture/Bild2.jpg",
-    "spheretexture/Bild3.jpg",
-    "spheretexture/Bild4.jpg"
+	"spheretexture/Bild1.webp",
+	"spheretexture/Bild2.jpg",
+	"spheretexture/Bild3.jpg",
+	"spheretexture/Bild4.jpg"
 ];
 let spheres = [];  // Enthält alle Sphären mit Umgebungs Textur
 let modelProximityStates = [false, false, false, false]; // Nähe-Indikator pro Modell
@@ -49,25 +49,56 @@ for(let image in images){
 	createImageBitmap(img).then(x=>{
 		bitmaps[imageName] = x;
 		trackableImages[image] = {
-        	image: x,
-        	widthInMeters: 0.1  // Physikalische Markerbreit
+			image: x,
+			widthInMeters: 0.1  // Physikalische Markerbreit
 		};
 	}).catch(err => { 										 
 		console.error("createImageBitmap failed", err);
-    	imageBitmapLoadFailed = true;
+		imageBitmapLoadFailed = true;
 	});
 
 	// Modell laden, skalieren und in eine Gruppe einfügen
-loader.load('fbx/cloud_test.FBX', function (object) {
+loader.load('fbx/portal.fbx', function (object) {
 	object.scale.set(5.04, 5.04, 5.04);
 	object.rotation.y = Math.PI; // Modell drehen
-	// Textur laden und auf alle Meshes anwenden
-	textureLoader.load('fbx/alpha clouds.jpg', function (texture) {
-		object.traverse(function (child) {
-			if (child.isMesh) {
-				child.material.map = texture;
-				child.material.transparent = true;
-				child.material.needsUpdate = true;
+	// Alle Texturen aus dem textures-Ordner laden und zuweisen
+	const textureFiles = [
+		'textures/portal_basecolor.jpg',
+		'textures/portal_emissive.jpg',
+		'textures/portal_metallic.jpg',
+		'textures/portal_normal.jpg',
+		'textures/portal_roughness.jpg'
+	];
+	const loadedTextures = {};
+	let texturesToLoad = textureFiles.length;
+	textureFiles.forEach(function(file) {
+		textureLoader.load(file, function(texture) {
+			loadedTextures[file] = texture;
+			texturesToLoad--;
+			if (texturesToLoad === 0) {
+				// Wenn alle Texturen geladen sind, zuweisen
+				object.traverse(function(child) {
+					if (child.isMesh) {
+						// Basistextur
+						if (loadedTextures['textures/portal_basecolor.jpg'])
+							child.material.map = loadedTextures['textures/portal_basecolor.jpg'];
+						// Emissive
+						if (loadedTextures['textures/portal_emissive.jpg']) {
+							child.material.emissiveMap = loadedTextures['textures/portal_emissive.jpg'];
+							child.material.emissive = new THREE.Color(0xffffff);
+						}
+						// Metallic
+						if (loadedTextures['textures/portal_metallic.jpg'])
+							child.material.metalnessMap = loadedTextures['textures/portal_metallic.jpg'];
+						// Normal
+						if (loadedTextures['textures/portal_normal.jpg'])
+							child.material.normalMap = loadedTextures['textures/portal_normal.jpg'];
+						// Roughness
+						if (loadedTextures['textures/portal_roughness.jpg'])
+							child.material.roughnessMap = loadedTextures['textures/portal_roughness.jpg'];
+						child.material.needsUpdate = true;
+					}
+				});
 			}
 		});
 	});
@@ -78,21 +109,21 @@ loader.load('fbx/cloud_test.FBX', function (object) {
 	
 	// Umgebungssphäre vorbereiten und in Szene einfügen (unsichtbar)
 	textureLoader.load(
-        sphereTextures[image],
-        function (texture) {
+		sphereTextures[image],
+		function (texture) {
 			const geometry = new THREE.SphereGeometry(500, 60, 40);
-            const material = new THREE.MeshBasicMaterial({
-                map: texture,
-                side: THREE.DoubleSide,
-            });
-            const sphere = new THREE.Mesh(geometry, material);
-            sphere.rotation.y = Math.PI;
-            scene.add(sphere);
-            //sphere.layers.set(1);
-            sphere.visible = false;
-            spheres[image] = sphere;  // Sphären abspeichern
-        }
-    );
+			const material = new THREE.MeshBasicMaterial({
+				map: texture,
+				side: THREE.DoubleSide,
+			});
+			const sphere = new THREE.Mesh(geometry, material);
+			sphere.rotation.y = Math.PI;
+			scene.add(sphere);
+			//sphere.layers.set(1);
+			sphere.visible = false;
+			spheres[image] = sphere;  // Sphären abspeichern
+		}
+	);
 	
 } 
 
@@ -136,25 +167,25 @@ function init() {
 
 // XR Session-Konfiguration vorbereiten
 function getXRSessionInit(mode, options) {
-  	if (options && options.referenceSpaceType) {
-  		renderer.xr.setReferenceSpaceType(options.referenceSpaceType);
-  	}
-  	var space = (options || {}).referenceSpaceType || 'local-floor';
-  	var sessionInit = (options && options.sessionInit) || {};
+	if (options && options.referenceSpaceType) {
+		renderer.xr.setReferenceSpaceType(options.referenceSpaceType);
+	}
+	var space = (options || {}).referenceSpaceType || 'local-floor';
+	var sessionInit = (options && options.sessionInit) || {};
   
-  	// Wenn der Benutzer den Speicherplatz bereits als optionales oder erforderliches Feature angegeben hat, tun Sie nichts
-  	if (sessionInit.optionalFeatures && sessionInit.optionalFeatures.includes(space))
-  		return sessionInit;
-  	//if ( sessionInit.requiredFeatures && sessionInit.requiredFeatures.includes(space) )
-  	//	return sessionInit;
+	// Wenn der Benutzer den Speicherplatz bereits als optionales oder erforderliches Feature angegeben hat, tun Sie nichts
+	if (sessionInit.optionalFeatures && sessionInit.optionalFeatures.includes(space))
+		return sessionInit;
+	//if ( sessionInit.requiredFeatures && sessionInit.requiredFeatures.includes(space) )
+	//	return sessionInit;
   
 	// Space als requiredFeature ergänzen
-  	var newInit = Object.assign({}, sessionInit);
-  	newInit.requiredFeatures = [space];
-  	if (sessionInit.requiredFeatures) {
-  		newInit.requiredFeatures = newInit.requiredFeatures.concat(sessionInit.requiredFeatures);
-  	}
-  	return newInit;
+	var newInit = Object.assign({}, sessionInit);
+	newInit.requiredFeatures = [space];
+	if (sessionInit.requiredFeatures) {
+		newInit.requiredFeatures = newInit.requiredFeatures.concat(sessionInit.requiredFeatures);
+	}
+	return newInit;
    }
 
 // ------------------------------------
@@ -173,9 +204,9 @@ function AR(){
 		button.textContent = 'EXIT AR';
 		currentSession = session;
 		session.requestReferenceSpace('local').then((refSpace) => {
-        	xrRefSpace = refSpace;
-        	session.requestAnimationFrame(onXRFrame);
-        });
+			xrRefSpace = refSpace;
+			session.requestAnimationFrame(onXRFrame);
+		});
 	}
 	
 	// AR-Session beenden
@@ -188,11 +219,11 @@ function AR(){
 	
 	// Session initialisieren oder beenden
 	if (currentSession === null) {
-        let options = {
-            requiredFeatures: ['dom-overlay','image-tracking'],
-            trackedImages: trackableImages,
-            domOverlay: {root: document.body}
-        };
+		let options = {
+			requiredFeatures: ['dom-overlay','image-tracking'],
+			trackedImages: trackableImages,
+			domOverlay: {root: document.body}
+		};
 		var sessionInit = getXRSessionInit('immersive-ar', {
 			mode: 'immersive-ar',
 			referenceSpaceType: 'local', // 'local-floor'
@@ -200,7 +231,7 @@ function AR(){
 		});
 		navigator.xr.requestSession('immersive-ar', sessionInit).then(onSessionStarted).catch(err => { 
 			console.error("Unsupported feature", err);
-    		showErrorMessage("Image-tracking konnte nicht aktiviert werden. Überprüfe, ob du 'webXR incubations' enabled hast auf chrome://flags oder versuche einen anderen Browser.");
+			showErrorMessage("Image-tracking konnte nicht aktiviert werden. Überprüfe, ob du 'webXR incubations' enabled hast auf chrome://flags oder versuche einen anderen Browser.");
 		});
 	} else {
 		currentSession.end();
@@ -232,10 +263,10 @@ function enterEnvironment(index){
 	
 	// Nur das Modell mit dem übergebenen Index anzeigen 
 	for (let i = 0; i < models.length; i++) {
-        if (models[i]) {
-            models[i].visible = (i === index); 
-        }
-    }
+		if (models[i]) {
+			models[i].visible = (i === index); 
+		}
+	}
 }
 
 function exitEnvironment(index){
@@ -245,10 +276,10 @@ function exitEnvironment(index){
 	
 	// Alle Modelle wieder anzeigen
 	for (let i = 0; i < models.length; i++) {
-        if (models[i]) {
-            models[i].visible = true;
-        }
-    }
+		if (models[i]) {
+			models[i].visible = true;
+		}
+	}
 }
 
 // ------------------------------------
@@ -256,50 +287,50 @@ function exitEnvironment(index){
 // ------------------------------------
 
 function onXRFrame(t, frame) {
-   	 const session = frame.session;
-    	session.requestAnimationFrame(onXRFrame);
-    	const baseLayer = session.renderState.baseLayer;
-    	const pose = frame.getViewerPose(xrRefSpace);
+	 const session = frame.session;
+		session.requestAnimationFrame(onXRFrame);
+		const baseLayer = session.renderState.baseLayer;
+		const pose = frame.getViewerPose(xrRefSpace);
 	render();
 
 	if (pose) {
 		for (const view of pose.views) {
-            const viewport = baseLayer.getViewport(view);
-            gl.viewport(viewport.x, viewport.y,
-                        viewport.width, viewport.height);
+			const viewport = baseLayer.getViewport(view);
+			gl.viewport(viewport.x, viewport.y,
+						viewport.width, viewport.height);
 			const results = frame.getImageTrackingResults();
 			for (const result of results) {
-			  	const imageIndex = result.index; // Der Index ist die Position des Bildes im trackedImages-Array, die bei der Sitzungserstellung angegeben wird
+				const imageIndex = result.index; // Der Index ist die Position des Bildes im trackedImages-Array, die bei der Sitzungserstellung angegeben wird
 			
-			  	// Erhalte die Pose des Bildes relativ zu einem Referenzraum.
-			 	const pose1 = frame.getPose(result.imageSpace, xrRefSpace);
-			 	var model = undefined;
-			  	var pos = pose1.transform.position;
-			  	var quat = pose1.transform.orientation;
+				// Erhalte die Pose des Bildes relativ zu einem Referenzraum.
+				const pose1 = frame.getPose(result.imageSpace, xrRefSpace);
+				var model = undefined;
+				var pos = pose1.transform.position;
+				var quat = pose1.transform.orientation;
 
 				// Positionier Modell mit dem selben Index auf dem Marker
-			   	if( !includedModels.includes(imageIndex) ){
+				if( !includedModels.includes(imageIndex) ){
 					let posi = poseToArray(pos);
 					includedModels.push(imageIndex);
 					model = models[imageIndex];
-			  		scene.add(model);
-			  	}
+					scene.add(model);
+				}
 				else{
 					model = models[imageIndex];
-			  	}
+				}
 
 				// Marker tracking state
-			  	const state = result.trackingState;
-			  	if (state == "tracked") {
+				const state = result.trackingState;
+				if (state == "tracked") {
 					let posi = poseToArray(pos);
 					let index = includedModels.indexOf(imageIndex);
 					model.position.copy( pos.toJSON());
 					model.quaternion.copy(quat.toJSON());
-			  	}
+				}
 				else if (state == "emulated") {}
 			}
-       	}
-    }
+		}
+	}
 
 	// Nähe zur Kamera überprüfen und Umgebung wechseln
 	let xrCamera = renderer.xr.getCamera(camera);
@@ -349,13 +380,13 @@ const button = document.createElement('button');
 button.id = 'ArButton';
 button.textContent = 'ENTER AR' ;
 button.style.cssText+= `position: absolute;top:80%;left:40%;width:20%;height:2rem;`;
-    
+	
 document.body.appendChild(button);
 document.getElementById('ArButton').addEventListener('click',x=> {
 	if (imageBitmapLoadFailed) {
-        showErrorMessage("UPS! Beim Laden ist etwas falsch gelaufen. Überprüfe, ob du 'webXR incubations' enabled hast auf chrome://flags und Lade die Seite neu.");
-        return;
-    }
+		showErrorMessage("UPS! Beim Laden ist etwas falsch gelaufen. Überprüfe, ob du 'webXR incubations' enabled hast auf chrome://flags und Lade die Seite neu.");
+		return;
+	}
 	 AR();
 });
 
@@ -364,27 +395,27 @@ document.getElementById('ArButton').addEventListener('click',x=> {
 // ---------------------------
 
 function showErrorMessage(msg) {
-    let errorDiv = document.getElementById('errorMsg');
-    if (!errorDiv) {
-        errorDiv = document.createElement('div');
-        errorDiv.id = 'errorMsg';
-        errorDiv.style.cssText = `
-            position: absolute;
-            top: 20%;
-            left: 30%;
-            width: 40%;
-            background: rgba(206, 43, 43, 0.55);
-            color: white;
-            text-align: center;
-            padding: 1rem;
-            border-radius: 1rem;
-            font-weight: bold;
-            font-size: 1.2rem;
-            z-index: 9999;
-        `;
-        document.body.appendChild(errorDiv);
-    }
-    errorDiv.textContent = msg;
+	let errorDiv = document.getElementById('errorMsg');
+	if (!errorDiv) {
+		errorDiv = document.createElement('div');
+		errorDiv.id = 'errorMsg';
+		errorDiv.style.cssText = `
+			position: absolute;
+			top: 20%;
+			left: 30%;
+			width: 40%;
+			background: rgba(206, 43, 43, 0.55);
+			color: white;
+			text-align: center;
+			padding: 1rem;
+			border-radius: 1rem;
+			font-weight: bold;
+			font-size: 1.2rem;
+			z-index: 9999;
+		`;
+		document.body.appendChild(errorDiv);
+	}
+	errorDiv.textContent = msg;
 }
 
 // ---------------------------
