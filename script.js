@@ -63,8 +63,8 @@ for(let image in images){
 
 	// Modell laden, skalieren und in eine Gruppe einfügen
 	loader.load( 'gltf/scene.gltf', function (gltf) {
-		gltf.scene.scale.set(1.0, 1.0, 1.0);
-		gltf.scene.rotation.y = Math.PI; // Modell drehen
+		gltf.scene.scale.set(0.20, 0.20, 0.20);
+		gltf.scene.rotation.y = Math.PI + 90; // Modell drehen
 		group = new THREE.Group();
 		group.add(gltf.scene);
 		models[image] = group;  // Modell abspeichern
