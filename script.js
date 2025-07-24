@@ -220,6 +220,25 @@ function AR(){
 // ------------------------------------
 // Umgebung aktivieren/deaktivieren je nach Modellnähe
 // ------------------------------------
+function transitionToEnvironment(index, isEntering) {
+	const overlay = document.getElementById('fadeOverlay');
+
+	// Schritt 1: Schwarz einblenden
+	overlay.style.opacity = 1;
+
+	setTimeout(() => {
+		// Schritt 2: Szene umschalten
+		if (isEntering) {
+		enterEnvironment(index);
+		} else {
+			exitEnvironment(index);
+		}
+		// Schritt 3: Schwarz wieder ausblenden
+		setTimeout(() => {
+			overlay.style.opacity = 0;
+		}, 300); // leicht verzögert, damit 360-Scene geladen ist
+	}, 1000); // Wartezeit für den "zu schwarz"-Effekt
+}
 
 function enterEnvironment(index){ 
 	// Alte Funktionalität auskommentiert:
@@ -326,11 +345,11 @@ function onXRFrame(t, frame) {
 			
 			if (isClose && !modelProximityStates[modelIndex]) {
 				modelProximityStates[modelIndex] = true;
-				enterEnvironment(modelIndex);
+				transitionToEnvironment(modelIndex, true);
 			}
 			else if (!isClose && modelProximityStates[modelIndex]) {
 				modelProximityStates[modelIndex] = false;
-				exitEnvironment(modelIndex);
+				transitionToEnvironment(modelIndex, false);
 			}
 		}
 	}

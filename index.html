@@ -17,14 +17,27 @@
         	body {
             		background-color: black;
         	}
+		#fadeOverlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100vw;
+		height: 100vh;
+		background-color: black;
+		pointer-events: none;
+		opacity: 0;
+		transition: opacity 1s ease;
+		z-index: 9999;
    	 </style>
   </head>
 <body>
+
 	<img id='enviroment1' style='display:none;' src = "marker/Solar Punk Enviroment Detail.jpg">
 	<img id='enviroment2' style='display:none;' src = "marker/Game Urban Enviroment Detail Example.jpg">
 	<img id='enviroment3' style='display:none;' src = "marker/Fliegender Berg.jpg">
 	<img id='enviroment4' style='display:none;' src = "marker/Solar Paradis Start Player.jpg">
-    	<script src="script.js"></script>     
+    <div id="fadeOverlay"></div>	
+	<script src="script.js"></script>     
 </body>
 </html>
 
