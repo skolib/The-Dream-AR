@@ -239,7 +239,7 @@ function transitionToEnvironment(index, isEntering) {
 		setTimeout(() => {
 			overlay.style.opacity = 0;
 		}, 300); // leicht verzögert, damit 360-Scene geladen ist
-	}, 100); // Wartezeit für den "zu schwarz"-Effekt
+	}, 600); // Wartezeit für den "zu schwarz"-Effekt
 }
 
 function enterEnvironment(index){ 
@@ -278,9 +278,12 @@ function exitEnvironment(index){
 	if (spheres[index]) {
 		spheres[index].visible = false;
 	}
-	// Portal wieder einblenden, wenn Sphere verschwindet
-	if (models[index]) {
-		models[index].visible = true;
+	// Nur die getrackten Modelle wieder anzeigen
+	for (let i = 0; i < includedModels.length; i++) {
+		let modelIndex = includedModels[i];
+		if (models[modelIndex]) {
+			models[modelIndex].visible = true;
+		}
 	}
 }
 
