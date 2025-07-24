@@ -22,6 +22,7 @@ let imageBitmapLoadFailed = false; // Fehlerstatus bei Bild-Initialisierung
 let loader = new THREE.GLTFLoader(); // GLTFLoader statt FBXLoader
 let models = new Array(4); // Platzhalter für 4 geladene Modelle
 let loadedModel = null; // das Modell wird einmal geladen und später geklont
+let includedModels = []; // Indizes der aktuell in der Szene enthaltenen Modelle
 
 // Umgebungswechsel Setup
 const textureLoader = new THREE.TextureLoader(); // Texturloader für Sphären
