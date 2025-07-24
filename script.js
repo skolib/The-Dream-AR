@@ -237,7 +237,7 @@ function transitionToEnvironment(index, isEntering) {
 		setTimeout(() => {
 			overlay.style.opacity = 0;
 		}, 300); // leicht verzögert, damit 360-Scene geladen ist
-	}, 1000); // Wartezeit für den "zu schwarz"-Effekt
+	}, 100); // Wartezeit für den "zu schwarz"-Effekt
 }
 
 function enterEnvironment(index){ 
@@ -256,7 +256,7 @@ function enterEnvironment(index){
 	}
 	// Alle Portale ausblenden
 	for (let i = 0; i < models.length; i++) {
-		if (models[i]) {
+		if (models[i].visible) {
 			models[i].visible = false;
 		}
 	}
