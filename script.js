@@ -222,28 +222,42 @@ function AR(){
 // ------------------------------------
 
 function enterEnvironment(index){ 
+	// Alte Funktionalität auskommentiert:
+	// if (spheres[index]) {
+	// 	spheres[index].visible = true;
+	// }
+	// // Portal ausblenden, wenn Sphere sichtbar wird
+	// if (models[index]) {
+	// 	models[index].visible = false;
+	// }
+
+	// Neue Funktionalität:
 	if (spheres[index]) {
 		spheres[index].visible = true;
 	}
-	
-	// Nur das Modell mit dem übergebenen Index anzeigen 
-	for (let i = 0; i < models.length; i++) {
-		if (models[i]) {
-			models[i].visible = (i === index); 
-		}
+	// Portal ausblenden, wenn Sphere sichtbar wird
+	if (models[index]) {
+		models[index].visible = false;
 	}
 }
 
 function exitEnvironment(index){
+	// Alte Funktionalität auskommentiert:
+	// if (spheres[index]) {
+	// 	spheres[index].visible = false;
+	// }
+	// // Portal wieder einblenden, wenn Sphere verschwindet
+	// if (models[index]) {
+	// 	models[index].visible = true;
+	// }
+
+	// Neue Funktionalität:
 	if (spheres[index]) {
 		spheres[index].visible = false;
 	}
-	
-	// Alle Modelle wieder anzeigen
-	for (let i = 0; i < models.length; i++) {
-		if (models[i]) {
-			models[i].visible = true;
-		}
+	// Portal wieder einblenden, wenn Sphere verschwindet
+	if (models[index]) {
+		models[index].visible = true;
 	}
 }
 
