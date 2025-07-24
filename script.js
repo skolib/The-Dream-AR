@@ -1,3 +1,5 @@
+// Model of Portal is by: "Magic Portal" (https://skfb.ly/opoAZ) by Nick Broad is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
+
 window.addEventListener('DOMContentLoaded', () => {
 
 // ---------------------------
