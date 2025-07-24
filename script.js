@@ -62,13 +62,15 @@ for(let image in images){
 
 
 	// Modell laden, skalieren und in eine Gruppe einfügen
-	loader.load( 'gltf/scene.gltf', function (gltf) {
-		gltf.scene.scale.set(0.20, 0.20, 0.20);
-		gltf.scene.rotation.y = Math.PI + 90; // Modell drehen
-		group = new THREE.Group();
-		group.add(gltf.scene);
-		models[image] = group;  // Modell abspeichern
-	} );
+   loader.load( 'gltf/scene.gltf', function (gltf) {
+	   gltf.scene.scale.set(0.08, 0.08, 0.08); // kleineres Portal
+	   gltf.scene.rotation.y = Math.PI; // Modell drehen
+	   gltf.scene.rotation.x = -Math.PI / 2; // Portal liegt flach auf Marker
+	   gltf.scene.position.set(0, 0.01, 0); // leicht über Marker platzieren
+	   group = new THREE.Group();
+	   group.add(gltf.scene);
+	   models[image] = group;  // Modell abspeichern
+   } );
 
 	// Umgebungssphäre vorbereiten und in Szene einfügen (unsichtbar)
 	textureLoader.load(
@@ -343,13 +345,13 @@ const button = document.createElement('button');
 button.id = 'ArButton';
 button.textContent = 'ENTER AR' ;
 button.style.cssText+= `position: absolute;top:80%;left:40%;width:20%;height:2rem;`;
-    
+	
 document.body.appendChild(button);
 document.getElementById('ArButton').addEventListener('click',x=> {
 	if (imageBitmapLoadFailed) {
-        showErrorMessage("UPS! Beim Laden ist etwas falsch gelaufen. Überprüfe, ob du 'webXR incubations' enabled hast auf chrome://flags und Lade die Seite neu.");
-        return;
-    }
+		showErrorMessage("UPS! Beim Laden ist etwas falsch gelaufen. Überprüfe, ob du 'webXR incubations' enabled hast auf chrome://flags und Lade die Seite neu.");
+		return;
+	}
 	 AR();
 });
 
