@@ -1,3 +1,5 @@
+window.addEventListener('DOMContentLoaded', () => {
+
 // ---------------------------
 // Grundlegende Setup-Variablen
 // ---------------------------
@@ -385,3 +387,4 @@ function showErrorMessage(msg) {
 
 init();
 render();
+});
