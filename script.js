@@ -68,7 +68,7 @@ for(let image in images){
 	   gltf.scene.scale.set(0.15, 0.15, 0.15); // kleineres Portal
 	   gltf.scene.rotation.y = Math.PI; // Modell drehen
 	   gltf.scene.rotation.x = -Math.PI / 2; // Portal liegt flach auf Marker
-	   gltf.scene.position.set(0, -0.5, 0.5); // auf Marker platzieren (L/R, +foreward/-backward, up/down)
+	   gltf.scene.position.set(0, 0, 0); // auf Marker platzieren
 	   group = new THREE.Group();
 	   group.add(gltf.scene);
 	   models[image] = group;  // Modell abspeichern
