@@ -17,7 +17,7 @@ let bitmaps = {}; // Gespeicherte Bitmap-Daten der Markerbilder
 let imageBitmapLoadFailed = false; // Fehlerstatus bei Bild-Initialisierung
 
 // 3D-Modell Setup
-let loader = new GLTFLoader(); // GLTFLoader statt FBXLoader
+let loader = new THREE.GLTFLoader(); // GLTFLoader statt FBXLoader
 let models = new Array(4); // Platzhalter für 4 geladene Modelle
 let loadedModel = null; // das Modell wird einmal geladen und später geklont
 
