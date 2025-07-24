@@ -28,9 +28,9 @@ let includedModels = []; // Indizes der aktuell in der Szene enthaltenen Modelle
 const textureLoader = new THREE.TextureLoader(); // Texturloader für Sphären
 let sphereTextures = [           // Texturen der Umgebungen
 	"spheretexture/Bild1.webp",
-	"spheretexture/Bild2.jpg",
-	"spheretexture/Bild3.jpg",
-	"spheretexture/Bild4.jpg"
+	"spheretexture/Bild2.webp",
+	"spheretexture/Bild3.webp",
+	"spheretexture/Bild4.webp"
 ];
 let spheres = [];  // Enthält alle Sphären mit Umgebungs Textur
 let modelProximityStates = [false, false, false, false]; // Nähe-Indikator pro Modell
@@ -237,7 +237,7 @@ function transitionToEnvironment(index, isEntering) {
 		setTimeout(() => {
 			overlay.style.opacity = 0;
 		}, 300); // leicht verzögert, damit 360-Scene geladen ist
-	}, 1000); // Wartezeit für den "zu schwarz"-Effekt
+	}, 500); // Wartezeit für den "zu schwarz"-Effekt
 }
 
 function enterEnvironment(index){ 
