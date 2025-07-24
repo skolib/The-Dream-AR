@@ -55,42 +55,37 @@ for(let image in images){
 		console.error("createImageBitmap failed", err);
 		imageBitmapLoadFailed = true;
 	});
+
+
+
+	// Modell laden, skalieren und in eine Gruppe einfügen
+	loader.load( 'gltf/scene.gltf', function (gltf) {
+		gltf.scene.scale.set(1.0, 1.0, 1.0);
+		gltf.scene.rotation.y = Math.PI; // Modell drehen
+		group = new THREE.Group();
+		group.add(gltf.scene);
+		models[image] = group;  // Modell abspeichern
+	} );
+
+	// Umgebungssphäre vorbereiten und in Szene einfügen (unsichtbar)
+	textureLoader.load(
+		sphereTextures[image],
+		function (texture) {
+			const geometry = new THREE.SphereGeometry(500, 60, 40);
+			const material = new THREE.MeshBasicMaterial({
+				map: texture,
+				side: THREE.DoubleSide,
+			});
+			const sphere = new THREE.Mesh(geometry, material);
+			sphere.rotation.y = Math.PI;
+			scene.add(sphere);
+			//sphere.layers.set(1);
+			sphere.visible = false;
+			spheres[image] = sphere;  // Sphären abspeichern
+		}
+	);
+	
 };
-// Modell laden, skalieren und in eine Gruppe einfügen
-// Modell einmal laden
-		
-loader.load('gltf/scene.gltf', function (gltf) {
-	loadedModel = gltf.scene;
-
-	
-	// Wenn das Modell da ist, klone es für alle Marker
-	for (let i = 0; i < images.length; i++) {
-		let modelClone = loadedModel.clone(true);
-		modelClone.scale.set(5.04, 5.04, 5.04);
-		modelClone.rotation.y = Math.PI;
-		models[i] = modelClone;
-	}
-});
-
-// Umgebungssphäre vorbereiten und in Szene einfügen (unsichtbar)
-textureLoader.load(
-	sphereTextures[image],
-	function (texture) {
-		const geometry = new THREE.SphereGeometry(500, 60, 40);
-		const material = new THREE.MeshBasicMaterial({
-			map: texture,
-			side: THREE.DoubleSide,
-		});
-		const sphere = new THREE.Mesh(geometry, material);
-		sphere.rotation.y = Math.PI;
-		scene.add(sphere);
-		//sphere.layers.set(1);
-		sphere.visible = false;
-		spheres[image] = sphere;  // Sphären abspeichern
-	}
-);
-	
-
 
 // ---------------------------
 // Standard XR & Scene Setup
@@ -341,29 +336,20 @@ function render() {
 // AR-Button initialisieren
 // ---------------------------
 
-// AR-Button initialisieren (nur wenn noch nicht vorhanden und nach DOM-Ready)
-function createARButton() {
-    if (!document.getElementById('ArButton')) {
-        const button = document.createElement('button');
-        button.id = 'ArButton';
-        button.textContent = 'ENTER AR';
-        button.style.cssText = 'position: absolute;top:80%;left:40%;width:20%;height:2rem;';
-        document.body.appendChild(button);
-        button.addEventListener('click', x => {
-            if (imageBitmapLoadFailed) {
-                showErrorMessage("UPS! Beim Laden ist etwas falsch gelaufen. Überprüfe, ob du 'webXR incubations' enabled hast auf chrome://flags und Lade die Seite neu.");
-                return;
-            }
-            AR();
-        });
+const button = document.createElement('button');
+button.id = 'ArButton';
+button.textContent = 'ENTER AR' ;
+button.style.cssText+= `position: absolute;top:80%;left:40%;width:20%;height:2rem;`;
+    
+document.body.appendChild(button);
+document.getElementById('ArButton').addEventListener('click',x=> {
+	if (imageBitmapLoadFailed) {
+        showErrorMessage("UPS! Beim Laden ist etwas falsch gelaufen. Überprüfe, ob du 'webXR incubations' enabled hast auf chrome://flags und Lade die Seite neu.");
+        return;
     }
-}
+	 AR();
+});
 
-if (document.readyState === 'loading') {
-    window.addEventListener('DOMContentLoaded', createARButton);
-} else {
-    createARButton();
-}
 
 // ---------------------------
 // Fehleranzeige bei Problemen
