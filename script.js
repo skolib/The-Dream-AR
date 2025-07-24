@@ -57,43 +57,21 @@ for(let image in images){
 	});
 };
 // Modell laden, skalieren und in eine Gruppe einfügen
-let texturePaths = {
-	PortalSurface_baseColor: 'textures/PortalSurface_base.png',
-	PortalSurface_emissive: 'textures/PortalSurface_emis.png',
-	PortalSurface_normal: 'textures/PortalSurface_norm.png',
-	MagicStone_baseColor: 'textures/MagicStone_base.png',
-	MagicStone_normal: 'textures/MagicStone_norm.png',
-	MagicStoneMoss_baseColor: 'textures/MagicStoneMoss_base.png',
-	MagicStoneMoss_emissive: 'textures/MagicStoneMoss_emis.png',
-	MagicStoneMoss_normal: 'textures/MagicStoneMoss_norm.png',
-};
+// Modell einmal laden
+		
+loader.load('gltf/scene.gltf', function (gltf) {
+	loadedModel = gltf.scene;
 
-let loadedTextures = {};
-let texturesToLoad = Object.keys(texturePaths).length;
+	
+	// Wenn das Modell da ist, klone es für alle Marker
+	for (let i = 0; i < images.length; i++) {
+		let modelClone = loadedModel.clone(true);
+		modelClone.scale.set(5.04, 5.04, 5.04);
+		modelClone.rotation.y = Math.PI;
+		models[i] = modelClone;
+	}
+});
 
-// Lade alle Texturen
-for (const [key, path] of Object.entries(texturePaths)) {
-	textureLoader.load(path, (texture) => {
-		loadedTextures[key] = texture;
-		texturesToLoad--;
-
-		// Wenn alle Texturen fertig sind, Modell einmal laden
-		if (texturesToLoad === 0) {
-			loader.load('gltf/scene.gltf', function (gltf) {
-				loadedModel = gltf.scene;
-
-				
-				// Wenn das Modell da ist, klone es für alle Marker
-				for (let i = 0; i < images.length; i++) {
-					let modelClone = loadedModel.clone(true);
-					modelClone.scale.set(5.04, 5.04, 5.04);
-					modelClone.rotation.y = Math.PI;
-					models[i] = modelClone;
-				}
-			});
-		}
-	});
-}	
 // Umgebungssphäre vorbereiten und in Szene einfügen (unsichtbar)
 textureLoader.load(
 	sphereTextures[image],
