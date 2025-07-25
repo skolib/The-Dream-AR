@@ -151,9 +151,12 @@ function onResize() {
   }
 
 function animate() {
-requestAnimationFrame(animate);
-if (arSource.ready) arContext.update(arSource.domElement);
-render();
+	requestAnimationFrame(animate);
+
+		if (arSource && arSource.ready !== false) {
+			arContext.update(arSource.domElement);
+		}
+	render();
 
 // ------------------------------------
 // Umgebung aktivieren/deaktivieren je nach Modellnähe
