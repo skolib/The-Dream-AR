@@ -78,6 +78,9 @@ for(let image in images){
 	textureLoader.load(
 		sphereTextures[image],
 		function (texture) {
+			// Spiegelung beheben: Textur horizontal flippen
+			texture.wrapS = THREE.RepeatWrapping;
+			texture.repeat.x = -1;
 			const geometry = new THREE.SphereGeometry(500, 60, 40);
 			const material = new THREE.MeshBasicMaterial({
 				map: texture,
