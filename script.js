@@ -6,19 +6,11 @@ window.addEventListener('DOMContentLoaded', () => {
 // Grundlegende Setup-Variablen
 // ---------------------------
 
-// Basiskomponenten für eine WebXR-3D-Szene
-let camera, scene, renderer, xrRefSpace, gl;
+// Basiskomponenten für eine AR-3D-Szene
+let camera, scene, renderer;
+let arSource, arContext, markerRoot;
 
-// Marker-Tracking Setup
-let trackableImages = new Array(4); // Platzhalter für 4 trackbare Bilder
-let images = [       // Marker Bilder durch ID holen
-	'enviroment1', 
-	'enviroment2',
-	'enviroment3',
-	'enviroment4',
-]; 
-let bitmaps = {}; // Gespeicherte Bitmap-Daten der Markerbilder
-let imageBitmapLoadFailed = false; // Fehlerstatus bei Bild-Initialisierung
+
 
 // 3D-Modell Setup
 let loader = new THREE.GLTFLoader(); // GLTFLoader statt FBXLoader
@@ -44,58 +36,73 @@ let poseToArray = (obj) => [obj.x, obj.y, obj.z];
 // ------------------------------------
 // Initialisierung von Bildern, Modellen & Umgebungen
 // ------------------------------------
+init();
+animate();
 
-for(let image in images){
-	let imageName = images[image];
+function init() {
+// Setup Szene & Kamera
+scene = new THREE.Scene();
+camera = new THREE.Camera();
+scene.add(camera);
 
-	// Markerbild laden und in Bitmap umwandeln
-	let img  = document.getElementById(imageName);
-	createImageBitmap(img).then(x=>{
-		bitmaps[imageName] = x;
-		trackableImages[image] = {
-			image: x,
-			widthInMeters: 0.1  // Physikalische Markerbreit
-		};
-	}).catch(err => { 										 
-		console.error("createImageBitmap failed", err);
-		imageBitmapLoadFailed = true;
+// Renderer
+renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// ARToolkit Source: Webcam
+arSource = new THREEx.ArToolkitSource({ sourceType: 'webcam' });
+arSource.init(() => onResize());
+window.addEventListener('resize', onResize);
+
+// ARToolkit Context
+arContext = new THREEx.ArToolkitContext({
+	cameraParametersUrl: 'https://cdn.jsdelivr.net/npm/ar.js@3.4.2/data/camera_para.dat',
+	detectionMode: 'mono'
+});
+arContext.init(() => camera.projectionMatrix.copy(arContext.getProjectionMatrix()));
+
+// Marker-Root für Portal
+markerRoot = new THREE.Group();
+scene.add(markerRoot);
+
+// NFT-Marker Controls
+new THREEx.ArMarkerControls(arContext, markerRoot, {
+	type: 'nft',
+	descriptorsUrl: 'marker/iset',
+	changeMatrixMode: 'modelViewMatrix',
+	smooth: true,
+	smoothCount: 5,
+	smoothTolerance: 0.01,
+	smoothThreshold: 5
+});
+
+// Lade dein GLTF‑Portal und füge es dem MarkerRoot hinzu
+loader.load('gltf/scene.gltf', gltf => {
+	let portal = gltf.scene;
+	portal.scale.set(0.15, 0.15, 0.15);
+	portal.rotation.set(-Math.PI/2, Math.PI, 0);
+	portal.position.set(0, 0, 0);
+	markerRoot.add(portal);
+});
+
+// Verbleibende Umgebungs-Sphären initialisieren (wie gehabt)
+sphereTextures.forEach((texPath, i) => {
+	textureLoader.load(texPath, texture => {
+	texture.wrapS = THREE.RepeatWrapping;
+	texture.repeat.x = -1;
+	const geo = new THREE.SphereGeometry(500, 60, 40);
+	const mat = new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide });
+	const sph = new THREE.Mesh(geo, mat);
+	sph.rotation.y = Math.PI;
+	sph.visible = false;
+	scene.add(sph);
+	spheres[i] = sph;
 	});
+});
+}
 
 
-
-	// Modell laden, skalieren und in eine Gruppe einfügen
-   loader.load( 'gltf/scene.gltf', function (gltf) {
-	   gltf.scene.scale.set(0.15, 0.15, 0.15); // kleineres Portal
-	   gltf.scene.rotation.y = Math.PI; // Modell drehen
-	   gltf.scene.rotation.x = -Math.PI / 2; // Portal liegt flach auf Marker
-	   gltf.scene.position.set(0, 0, 0); // auf Marker platzieren
-	   group = new THREE.Group();
-	   group.add(gltf.scene);
-	   models[image] = group;  // Modell abspeichern
-   } );
-
-	// Umgebungssphäre vorbereiten und in Szene einfügen (unsichtbar)
-	textureLoader.load(
-		sphereTextures[image],
-		function (texture) {
-			// Spiegelung beheben: Textur horizontal flippen
-			texture.wrapS = THREE.RepeatWrapping;
-			texture.repeat.x = -1;
-			const geometry = new THREE.SphereGeometry(500, 60, 40);
-			const material = new THREE.MeshBasicMaterial({
-				map: texture,
-				side: THREE.DoubleSide,
-			});
-			const sphere = new THREE.Mesh(geometry, material);
-			sphere.rotation.y = Math.PI;
-			scene.add(sphere);
-			//sphere.layers.set(1);
-			sphere.visible = false;
-			spheres[image] = sphere;  // Sphären abspeichern
-		}
-	);
-	
-};
 
 // ---------------------------
 // Standard XR & Scene Setup
@@ -135,236 +142,71 @@ function init() {
 	window.addEventListener('resize', onWindowResize, false);
 }
 
-// XR Session-Konfiguration vorbereiten
-function getXRSessionInit(mode, options) {
-	if (options && options.referenceSpaceType) {
-		renderer.xr.setReferenceSpaceType(options.referenceSpaceType);
-	}
-	var space = (options || {}).referenceSpaceType || 'local-floor';
-	var sessionInit = (options && options.sessionInit) || {};
-  
-	// Wenn der Benutzer den Speicherplatz bereits als optionales oder erforderliches Feature angegeben hat, tun Sie nichts
-	if (sessionInit.optionalFeatures && sessionInit.optionalFeatures.includes(space))
-		return sessionInit;
-	//if ( sessionInit.requiredFeatures && sessionInit.requiredFeatures.includes(space) )
-	//	return sessionInit;
-  
-	// Space als requiredFeature ergänzen
-	var newInit = Object.assign({}, sessionInit);
-	newInit.requiredFeatures = [space];
-	if (sessionInit.requiredFeatures) {
-		newInit.requiredFeatures = newInit.requiredFeatures.concat(sessionInit.requiredFeatures);
-	}
-	return newInit;
-   }
+function onResize() {
+    arSource.onResize();
+    arSource.copySizeTo(renderer.domElement);
+    if (arContext.arController) {
+      arSource.copySizeTo(arContext.arController.canvas);
+    }
+  }
 
-// ------------------------------------
-// WebXR AR-Modus aktivieren/deaktivieren
-// ------------------------------------
-
-function AR(){
-	var currentSession = null;
-	
-	// AR-Session starten
-	function onSessionStarted(session) {
-		session.addEventListener('end', onSessionEnded);
-		renderer.xr.setSession(session);
-		gl = renderer.getContext();
-		button.style.display = 'none';
-		button.textContent = 'EXIT AR';
-		currentSession = session;
-		session.requestReferenceSpace('local').then((refSpace) => {
-			xrRefSpace = refSpace;
-			session.requestAnimationFrame(onXRFrame);
-		});
-	}
-	
-	// AR-Session beenden
-	function onSessionEnded( /*event*/ ) {
-		currentSession.removeEventListener('end', onSessionEnded);
-		renderer.xr.setSession(null);
-		button.textContent = 'ENTER AR' ;
-		currentSession = null;
-	}
-	
-	// Session initialisieren oder beenden
-	if (currentSession === null) {
-		let options = {
-			requiredFeatures: ['dom-overlay','image-tracking'],
-			trackedImages: trackableImages,
-			domOverlay: {root: document.body}
-		};
-		var sessionInit = getXRSessionInit('immersive-ar', {
-			mode: 'immersive-ar',
-			referenceSpaceType: 'local', // 'local-floor'
-			sessionInit: options
-		});
-		navigator.xr.requestSession('immersive-ar', sessionInit).then(onSessionStarted).catch(err => { 
-			console.error("Unsupported feature", err);
-			showErrorMessage("Image-tracking konnte nicht aktiviert werden. Überprüfe, ob du 'webXR incubations' enabled hast auf chrome://flags oder versuche einen anderen Browser.");
-		});
-	} else {
-		currentSession.end();
-	}
-	
-	// UI-Style bei Sessionwechsel anpassen
-	renderer.xr.addEventListener('sessionstart',
-		function(ev) {
-			console.log('sessionstart', ev);
-			document.body.style.backgroundColor = 'rgba(0, 0, 0, 0)';
-			renderer.domElement.style.display = 'none';
-		});
-	renderer.xr.addEventListener('sessionend',
-		function(ev) {
-			console.log('sessionend', ev);
-			document.body.style.backgroundColor = '';
-			renderer.domElement.style.display = '';
-		});
-}
+function animate() {
+requestAnimationFrame(animate);
+if (arSource.ready) arContext.update(arSource.domElement);
+render();
 
 // ------------------------------------
 // Umgebung aktivieren/deaktivieren je nach Modellnähe
 // ------------------------------------
-function transitionToEnvironment(index, isEntering) {
-	const overlay = document.getElementById('fadeOverlay');
+	function transitionToEnvironment(index, isEntering) {
+		const overlay = document.getElementById('fadeOverlay');
 
-	// Schritt 1: Schwarz einblenden
-	overlay.style.opacity = 1;
+		// Schritt 1: Schwarz einblenden
+		overlay.style.opacity = 1;
 
-	setTimeout(() => {
-		// Schritt 2: Szene umschalten
-		if (isEntering) {
-		enterEnvironment(index);
-		} else {
-			exitEnvironment(index);
-		}
-		// Schritt 3: Schwarz wieder ausblenden
 		setTimeout(() => {
-			overlay.style.opacity = 0;
-		}, 300); // leicht verzögert, damit 360-Scene geladen ist
-	}, 600); // Wartezeit für den "zu schwarz"-Effekt
-}
-
-function enterEnvironment(index){ 
-	// Alte Funktionalität auskommentiert:
-	// if (spheres[index]) {
-	// 	spheres[index].visible = true;
-	// }
-	// // Portal ausblenden, wenn Sphere sichtbar wird
-	// if (models[index]) {
-	// 	models[index].visible = false;
-	// }
-
-	// Neue Funktionalität:
-	if (spheres[index]) {
-		spheres[index].visible = true;
+			// Schritt 2: Szene umschalten
+			if (isEntering) {
+			enterEnvironment(index);
+			} else {
+				exitEnvironment(index);
+			}
+			// Schritt 3: Schwarz wieder ausblenden
+			setTimeout(() => {
+				overlay.style.opacity = 0;
+			}, 300); // leicht verzögert, damit 360-Scene geladen ist
+		}, 600); // Wartezeit für den "zu schwarz"-Effekt
 	}
-	// Alle Portale ausblenden
-	for (let i = 0; i < models.length; i++) {
-		if (models[i].visible) {
-			models[i].visible = false;
+
+	function enterEnvironment(index){ 
+
+		// Neue Funktionalität:
+		if (spheres[index]) {
+			spheres[index].visible = true;
 		}
-	}
-}
-
-function exitEnvironment(index){
-	// Alte Funktionalität auskommentiert:
-	// if (spheres[index]) {
-	// 	spheres[index].visible = false;
-	// }
-	// // Portal wieder einblenden, wenn Sphere verschwindet
-	// if (models[index]) {
-	// 	models[index].visible = true;
-	// }
-
-	// Neue Funktionalität:
-	if (spheres[index]) {
-		spheres[index].visible = false;
-	}
-	// Nur die getrackten Modelle wieder anzeigen
-	for (let i = 0; i < includedModels.length; i++) {
-		let modelIndex = includedModels[i];
-		if (models[modelIndex]) {
-			models[modelIndex].visible = true;
-		}
-	}
-}
-
-// ------------------------------------
-// Frame für Tracking & Umgebungserkennung
-// ------------------------------------
-
-function onXRFrame(t, frame) {
-	 const session = frame.session;
-		session.requestAnimationFrame(onXRFrame);
-		const baseLayer = session.renderState.baseLayer;
-		const pose = frame.getViewerPose(xrRefSpace);
-	render();
-
-	if (pose) {
-		for (const view of pose.views) {
-			const viewport = baseLayer.getViewport(view);
-			gl.viewport(viewport.x, viewport.y,
-						viewport.width, viewport.height);
-			const results = frame.getImageTrackingResults();
-			for (const result of results) {
-				const imageIndex = result.index; // Der Index ist die Position des Bildes im trackedImages-Array, die bei der Sitzungserstellung angegeben wird
-			
-				// Erhalte die Pose des Bildes relativ zu einem Referenzraum.
-				const pose1 = frame.getPose(result.imageSpace, xrRefSpace);
-				var model = undefined;
-				var pos = pose1.transform.position;
-				var quat = pose1.transform.orientation;
-
-				// Positionier Modell mit dem selben Index auf dem Marker
-				if( !includedModels.includes(imageIndex) ){
-					let posi = poseToArray(pos);
-					includedModels.push(imageIndex);
-					model = models[imageIndex];
-					scene.add(model);
-				}
-				else{
-					model = models[imageIndex];
-				}
-
-				// Marker tracking state
-				const state = result.trackingState;
-				if (state == "tracked") {
-					let posi = poseToArray(pos);
-					let index = includedModels.indexOf(imageIndex);
-					model.position.copy( pos.toJSON());
-					model.quaternion.copy(quat.toJSON());
-				}
-				else if (state == "emulated") {}
+		// Alle Portale ausblenden
+		for (let i = 0; i < models.length; i++) {
+			if (models[i].visible) {
+				models[i].visible = false;
 			}
 		}
 	}
 
-	// Nähe zur Kamera überprüfen und Umgebung wechseln
-	let xrCamera = renderer.xr.getCamera(camera);
-	let cameraPos = new THREE.Vector3().setFromMatrixPosition(xrCamera.matrixWorld);
-	for (let i = 0; i < includedModels.length; i++) {
-		let modelIndex = includedModels[i];
-		let model = models[modelIndex];
+	function exitEnvironment(index){
 
-		if (model) {
-			let modelPos = new THREE.Vector3().copy(model.position);
-			let distance = modelPos.distanceTo(cameraPos);
-
-			let isClose = distance < minDist;
-			
-			if (isClose && !modelProximityStates[modelIndex]) {
-				modelProximityStates[modelIndex] = true;
-				transitionToEnvironment(modelIndex, true);
-			}
-			else if (!isClose && modelProximityStates[modelIndex]) {
-				modelProximityStates[modelIndex] = false;
-				transitionToEnvironment(modelIndex, false);
+		// Neue Funktionalität:
+		if (spheres[index]) {
+			spheres[index].visible = false;
+		}
+		// Nur die getrackten Modelle wieder anzeigen
+		for (let i = 0; i < includedModels.length; i++) {
+			let modelIndex = includedModels[i];
+			if (models[modelIndex]) {
+				models[modelIndex].visible = true;
 			}
 		}
 	}
 }
-
 // ---------------------------
 // Fenstergröße anpassen
 // ---------------------------
