@@ -195,7 +195,7 @@ function animate() {
 }
 
 let lastUpdate = 0;
-const UPDATE_INTERVAL = 100; // in ms, also 10x pro Sekunde
+const UPDATE_INTERVAL = 250; // in ms, also x pro Sekunde
 
 function render(timestamp, xrFrame) {
     if (xrFrame) {
