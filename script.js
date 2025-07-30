@@ -194,46 +194,54 @@ function animate() {
     renderer.setAnimationLoop(render);
 }
 
+let lastUpdate = 0;
+const UPDATE_INTERVAL = 100; // in ms, also 10x pro Sekunde
+
 function render(timestamp, xrFrame) {
     if (xrFrame) {
-        const session = xrFrame.session;
-        const referenceSpace = renderer.xr.getReferenceSpace();
-        const viewerPose = xrFrame.getViewerPose(referenceSpace);
+        // Nur alle UPDATE_INTERVAL ms aktualisieren
+        if (timestamp - lastUpdate > UPDATE_INTERVAL) {
+            lastUpdate = timestamp;
 
-        // Hide all spheres and FBX chairs by default
-        for (let s of spheres) {
-            s.visible = false;
-        }
-        for (let m of markers) {
-            if (m.fbxObject) m.fbxObject.visible = false;
-        }
+            const session = xrFrame.session;
+            const referenceSpace = renderer.xr.getReferenceSpace();
+            const viewerPose = xrFrame.getViewerPose(referenceSpace);
 
-        if (viewerPose && markerPositions.length > 0) {
-            const position = viewerPose.transform.position;
-            // Zeige nur die Sphere und den Stuhl, die dem Nutzer am nächsten sind
-            let minDist = Infinity;
-            let minIndex = -1;
-            for (let i = 0; i < markerPositions.length && i < maxMarkers; i++) {
-                const markerPos = markerPositions[i];
-                if (!markerPos) continue;
-                const distance = Math.sqrt(
-                    Math.pow(position.x - markerPos.x, 2) +
-                    Math.pow(position.y - markerPos.y, 2) +
-                    Math.pow(position.z - markerPos.z, 2)
-                );
-                if (distance < minDist) {
-                    minDist = distance;
-                    minIndex = i;
+            // Hide all spheres and FBX chairs by default
+            for (let s of spheres) {
+                s.visible = false;
+            }
+            for (let m of markers) {
+                if (m.fbxObject) m.fbxObject.visible = false;
+            }
+
+            if (viewerPose && markerPositions.length > 0) {
+                const position = viewerPose.transform.position;
+                // Zeige nur die Sphere und den Stuhl, die dem Nutzer am nächsten sind
+                let minDist = Infinity;
+                let minIndex = -1;
+                for (let i = 0; i < markerPositions.length && i < maxMarkers; i++) {
+                    const markerPos = markerPositions[i];
+                    if (!markerPos) continue;
+                    const distance = Math.sqrt(
+                        Math.pow(position.x - markerPos.x, 2) +
+                        Math.pow(position.y - markerPos.y, 2) +
+                        Math.pow(position.z - markerPos.z, 2)
+                    );
+                    if (distance < minDist) {
+                        minDist = distance;
+                        minIndex = i;
+                    }
                 }
-            }
-            // Sphären-Sichtbarkeit korrekt setzen (immer alle sphären prüfen)
-            for (let i = 0; i < spheres.length; i++) {
-                spheres[i].visible = (i === minIndex && minDist < 1.0);
-            }
-            // Nur das aktuelle FBX-Objekt sichtbar machen
-            for (let i = 0; i < markers.length; i++) {
-                if (markers[i] && markers[i].fbxObject) {
-                    markers[i].fbxObject.visible = (i === minIndex && minDist < 1.0);
+                // Sphären-Sichtbarkeit korrekt setzen (immer alle sphären prüfen)
+                for (let i = 0; i < spheres.length; i++) {
+                    spheres[i].visible = (i === minIndex && minDist < 1.0);
+                }
+                // Nur das aktuelle FBX-Objekt sichtbar machen
+                for (let i = 0; i < markers.length; i++) {
+                    if (markers[i] && markers[i].fbxObject) {
+                        markers[i].fbxObject.visible = (i === minIndex && minDist < 1.0);
+                    }
                 }
             }
         }
